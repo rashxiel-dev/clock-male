@@ -48,16 +48,16 @@ body {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "clock prayers" "tasks prayers" "cal prayers";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas: "clock clock" "prayers prayers" "tasks tasks";
   gap: clamp(12px, 2.4vw, 26px) clamp(16px, 3vw, 36px);
 }
 .clock { grid-area: clock; min-width: 0; position: relative; }
 .time {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(64px, 17.5vw, 190px);
+  font-size: clamp(64px, min(25vw, 30vh), 340px);
   line-height: 0.95;
   letter-spacing: -0.02em;
   font-variant-numeric: lining-nums tabular-nums;
@@ -132,42 +132,60 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
 .cal-form input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
 .cal-form input[type=text]{flex:1 1 9em}
 .set-wide{grid-column:1/-1}
+.plist{flex-direction:row;justify-content:stretch;gap:6px;flex:none}
+.plist li{flex:1;flex-direction:column;align-items:center;gap:0;padding:.25em .2em;text-align:center}
+.plist .name{font-size:.85em}
+.plist .at,.plist li.minor .at{font-size:1.25em}
+.prayers{padding:8px 12px;gap:4px}
+.note{display:none}
+.clock .tools{position:absolute;top:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin:0}
+#wx{color:var(--fg)}
+.rep{display:flex;align-items:center;gap:4px;white-space:nowrap;color:var(--muted)}
+:root{--glass:rgba(250,248,255,.82)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glass:rgba(14,15,34,.78)}}
+:root[data-theme="dark"]{--glass:rgba(14,15,34,.78)}
+#bg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;background:center/cover no-repeat;opacity:0;transition:opacity .6s}
+body.hasbg .clock,body.hasbg .tasks,body.hasbg .cal,body.hasbg .prayers{background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:8px 14px}
+body.hasbg .clock{width:fit-content;max-width:100%}
+body.saver .tasks,body.saver .cal,body.saver .tools{display:none}
+body.saver .wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"clock" "prayers"}
+body.saver .clock{align-self:end}
 @media (max-width: 640px) {
   html, body { height: auto; }
-  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks" "cal"; }
+  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks"; }
   .time { font-size: clamp(64px, 24vw, 130px); }
   .list { max-height: 50vh; }
+  .clock .tools { position: static; flex-direction: row; margin-top: 6px; }
+  .plist { flex-wrap: wrap; } .plist li { flex: 1 1 30%; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .plist li { transition: background-color .3s; }
 }
 </style>
 
+<div id="bg"></div>
+<input type="file" id="photoIn" accept="image/*" multiple hidden>
 <main class="wrap">
   <section class="clock" aria-label="Time and date">
     <div class="time" id="time" aria-live="off">--:--</div>
-    <div class="day"><strong id="dayname">&nbsp;</strong><span id="date"></span><span id="hijri"></span></div>
+    <div class="day"><strong id="dayname">&nbsp;</strong><span id="date"></span><span id="hijri"></span><span id="wx"></span></div>
+    <div class="tools">
+      <button class="ghost" id="photoBtn" type="button">Photos</button>
+      <button class="ghost" id="saverBtn" type="button">Screensaver</button>
+      <button class="ghost" id="setBtn" type="button">Settings</button>
+      <button class="ghost" id="fsBtn" type="button">Full screen</button>
+    </div>
   </section>
 
   <section class="tasks" aria-label="Tasks">
     <h2>Tasks today</h2>
     <form class="task-form" id="taskForm">
       <input type="text" id="taskInput" placeholder="Add a task" autocomplete="off" aria-label="New task">
+      <label class="rep"><input type="checkbox" id="taskDaily"> Daily</label>
       <button type="submit">Add</button>
     </form>
     <ul class="list" id="taskList"></ul>
     <p class="hint" id="taskHint"></p>
-  </section>
-
-  <section class="cal" aria-label="Google Calendar">
-    <div class="cal-head"><h2>Calendar</h2><button class="ghost" id="calBtn" type="button">Connect Google</button></div>
-    <ul class="list" id="calList"></ul>
-    <form class="cal-form" id="calForm">
-      <input type="text" id="evTitle" placeholder="New event" aria-label="Event title" autocomplete="off">
-      <input type="datetime-local" id="evWhen" aria-label="Event start">
-      <button type="submit">Add</button>
-    </form>
-    <p class="hint" id="calHint"></p>
   </section>
 
   <section class="prayers" aria-label="Prayer times for Malé">
@@ -177,10 +195,6 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     </div>
     <ul class="plist" id="plist"></ul>
     <p class="note">Calculated from sun position for Malé (4.18°N, 73.51°E). Compare with the official Maldives timetable and use Settings to adjust minutes.</p>
-    <div class="tools">
-      <button class="ghost" id="setBtn" type="button">Settings</button>
-      <button class="ghost" id="fsBtn" type="button">Full screen</button>
-    </div>
   </section>
 </main>
 
@@ -198,10 +212,9 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
       <label for="o_asr">Asr adjust (min)</label><input id="o_asr" type="number" step="1">
       <label for="o_magrib">Magrib adjust (min)</label><input id="o_magrib" type="number" step="1">
       <label for="o_isha">Isha adjust (min)</label><input id="o_isha" type="number" step="1">
-      <label for="s_cid" class="set-wide">Google Client ID (for Calendar)</label>
-      <input id="s_cid" class="set-wide" type="text" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" autocapitalize="off">
     </div>
     <div class="set-actions">
+      <button type="button" class="ghost" id="clrPhotos">Clear photos</button>
       <button type="button" class="ghost" id="resetBtn">Reset</button>
       <button type="button" class="ghost" id="cancelBtn">Cancel</button>
       <button type="submit" id="saveBtn">Save</button>
@@ -333,6 +346,7 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     var key = n.y + '-' + n.m + '-' + n.d;
     if (key !== lastDay) {
       lastDay = key;
+      resetDaily();
       times = prayerTimes(n.y, n.m, n.d);
       el.dayname.textContent = n.wd;
       var ref = new Date(Date.UTC(n.y, n.m - 1, n.d, 7));
@@ -359,8 +373,8 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     tasks.forEach(function (t) {
       var li = document.createElement('li'); if (t.done) li.className = 'done';
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = 'task' + t.id;
-      cb.addEventListener('change', function () { t.done = cb.checked; save(LS_TASKS, tasks); renderTasks(); });
-      var lb = document.createElement('label'); lb.htmlFor = cb.id; lb.textContent = t.text;
+      cb.addEventListener('change', function () { t.done = cb.checked; t.doneDay = todayKey(); save(LS_TASKS, tasks); renderTasks(); });
+      var lb = document.createElement('label'); lb.htmlFor = cb.id; lb.textContent = (t.daily ? '\u21BB ' : '') + t.text;
       var del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', 'Delete task');
       del.addEventListener('click', function () { tasks = tasks.filter(function (x) { return x !== t; }); save(LS_TASKS, tasks); seeded = false; renderTasks(); });
       li.appendChild(cb); li.appendChild(lb); li.appendChild(del); listEl.appendChild(li);
@@ -372,7 +386,8 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     var inp = document.getElementById('taskInput'), v = inp.value.trim();
     if (!v) return;
     if (seeded) { tasks = []; seeded = false; }
-    tasks.push({ id: Date.now(), text: v, done: false });
+    tasks.push({ id: Date.now(), text: v, done: false, daily: document.getElementById('taskDaily').checked });
+    document.getElementById('taskDaily').checked = false;
     save(LS_TASKS, tasks); inp.value = ''; renderTasks();
   });
 
@@ -383,7 +398,6 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     document.getElementById('s_h24').value = String(c.h24);
     document.getElementById('s_fa').value = c.fa;
     document.getElementById('s_ia').value = c.ia;
-    document.getElementById('s_cid').value = c.cid || cfg.cid || '';
     ids.forEach(function (k) { document.getElementById('o_' + k).value = c.off[k]; });
   }
   document.getElementById('setBtn').addEventListener('click', function () { fillForm(cfg); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
@@ -394,79 +408,80 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
     var num = function (id, d) { var v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : d; };
     cfg.h24 = +document.getElementById('s_h24').value === 12 ? 12 : 24;
     cfg.fa = num('s_fa', 18); cfg.ia = num('s_ia', 18);
-    cfg.cid = document.getElementById('s_cid').value.trim();
     ids.forEach(function (k) { cfg.off[k] = num('o_' + k, 0); });
     save(LS_CFG, cfg); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
   });
 
-  // ---- Google Calendar (primary calendar, read + add) ----
-  var LS_TOK = 'male-clock-gtok';
-  var tok = load(LS_TOK, null);
-  var calEl = document.getElementById('calList'), calHint = document.getElementById('calHint'), calBtn = document.getElementById('calBtn');
-  function valid() { return tok && tok.exp > Date.now(); }
-  function api(path, opt) {
-    opt = opt || {};
-    opt.headers = { 'Authorization': 'Bearer ' + tok.t, 'Content-Type': 'application/json' };
-    return fetch('https://www.googleapis.com/calendar/v3/' + path, opt).then(function (r) {
-      if (r.status === 401) { tok = null; save(LS_TOK, null); throw new Error('expired'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
+  function todayKey() { var n = now(); return n.y + '-' + n.m + '-' + n.d; }
+  function resetDaily() {
+    var ch = false;
+    tasks.forEach(function (t) { if (t.daily && t.done && t.doneDay !== todayKey()) { t.done = false; ch = true; } });
+    if (ch) { save(LS_TASKS, tasks); renderTasks(); }
+  }
+
+  // ---- Weather (Open-Meteo, no key) ----
+  var WX = { 0: '\u2600\uFE0F', 1: '\uD83C\uDF24\uFE0F', 2: '\u26C5', 3: '\u2601\uFE0F', 45: '\uD83C\uDF2B\uFE0F', 48: '\uD83C\uDF2B\uFE0F', 51: '\uD83C\uDF26\uFE0F', 53: '\uD83C\uDF26\uFE0F', 55: '\uD83C\uDF26\uFE0F', 61: '\uD83C\uDF27\uFE0F', 63: '\uD83C\uDF27\uFE0F', 65: '\uD83C\uDF27\uFE0F', 80: '\uD83C\uDF26\uFE0F', 81: '\uD83C\uDF27\uFE0F', 82: '\uD83C\uDF27\uFE0F', 95: '\u26C8\uFE0F', 96: '\u26C8\uFE0F', 99: '\u26C8\uFE0F' };
+  function weather() {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LNG + '&current=temperature_2m,weather_code')
+      .then(function (r) { return r.json(); })
+      .then(function (j) { document.getElementById('wx').textContent = (WX[j.current.weather_code] || '') + ' ' + Math.round(j.current.temperature_2m) + '\u00B0C'; })
+      .catch(function () {});
+  }
+  weather(); setInterval(weather, 1800000);
+
+  // ---- Photos + screensaver (photos stay on this device) ----
+  var DB = null, photos = [], pi = 0, bg = document.getElementById('bg');
+  function idb(cb) {
+    if (DB) return cb(DB);
+    try {
+      var rq = indexedDB.open('male-clock', 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore('p', { autoIncrement: true }); };
+      rq.onsuccess = function () { DB = rq.result; cb(DB); };
+      rq.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  }
+  function showPhoto() {
+    if (!photos.length) { bg.style.opacity = 0; document.body.classList.remove('hasbg'); return; }
+    document.body.classList.add('hasbg'); bg.style.opacity = 0;
+    var src = photos[pi % photos.length]; pi++;
+    setTimeout(function () { bg.style.backgroundImage = 'url(' + src + ')'; bg.style.opacity = 1; }, 600);
+  }
+  function loadPhotos() {
+    idb(function (d) {
+      if (!d) return;
+      var out = [], c = d.transaction('p').objectStore('p').openCursor();
+      c.onsuccess = function () { var cur = c.result; if (cur) { out.push(cur.value); cur.continue(); } else { photos = out; pi = 0; showPhoto(); } };
     });
   }
-  function renderEvents(items) {
-    calEl.innerHTML = '';
-    var tf = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hour: 'numeric', minute: '2-digit', hour12: cfg.h24 === 12 });
-    var df = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, weekday: 'short', day: 'numeric', month: 'short' });
-    items.forEach(function (e) {
-      var allDay = !!e.start.date, d = new Date(allDay ? e.start.date + 'T12:00:00+05:00' : e.start.dateTime);
-      var li = document.createElement('li'); li.className = 'ev';
-      var w = document.createElement('span'); w.className = 'w'; w.textContent = df.format(d) + ' · ' + (allDay ? 'All day' : tf.format(d));
-      var t = document.createElement('span'); t.className = 't'; t.textContent = e.summary || '(no title)';
-      li.appendChild(w); li.appendChild(t); calEl.appendChild(li);
+  document.getElementById('photoBtn').addEventListener('click', function () { document.getElementById('photoIn').click(); });
+  document.getElementById('photoIn').addEventListener('change', function (e) {
+    var files = Array.prototype.slice.call(e.target.files || []); e.target.value = '';
+    if (!files.length) return;
+    idb(function (d) {
+      if (!d) return;
+      var left = files.length;
+      function done() { if (--left === 0) loadPhotos(); }
+      files.forEach(function (f) {
+        var img = new Image(), u = URL.createObjectURL(f);
+        img.onload = function () {
+          var k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+          try { var tx = d.transaction('p', 'readwrite'); tx.objectStore('p').add(c.toDataURL('image/jpeg', 0.8)); tx.oncomplete = done; tx.onerror = done; } catch (x) { done(); }
+        };
+        img.onerror = done; img.src = u;
+      });
     });
-    calHint.textContent = items.length ? '' : 'No upcoming events.';
-  }
-  function loadEvents() {
-    if (!valid()) {
-      calBtn.textContent = 'Connect Google';
-      calHint.textContent = !cfg.cid ? 'Add your Google Client ID in Settings, then tap Connect Google.' : (tok ? 'Session expired. Tap Connect Google.' : 'Not connected.');
-      return;
-    }
-    calBtn.textContent = 'Refresh';
-    var n = now(), min = new Date(Date.UTC(n.y, n.m - 1, n.d) - TZ * 3600000).toISOString();
-    api('calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=15&timeMin=' + encodeURIComponent(min))
-      .then(function (r) { renderEvents(r.items || []); })
-      .catch(function (e) { calHint.textContent = 'Could not load events (' + e.message + ').'; if (!valid()) calBtn.textContent = 'Connect Google'; });
-  }
-  function connect() {
-    if (!cfg.cid) { calHint.textContent = 'Add your Google Client ID in Settings first.'; return; }
-    function go() {
-      google.accounts.oauth2.initTokenClient({
-        client_id: cfg.cid,
-        scope: 'https://www.googleapis.com/auth/calendar.events',
-        callback: function (r) {
-          if (r.error) { calHint.textContent = 'Sign-in failed: ' + r.error; return; }
-          tok = { t: r.access_token, exp: Date.now() + (r.expires_in - 60) * 1000 }; save(LS_TOK, tok); loadEvents();
-        }
-      }).requestAccessToken({});
-    }
-    if (window.google && google.accounts && google.accounts.oauth2) return go();
-    var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = go; s.onerror = function () { calHint.textContent = 'Could not reach Google (offline?).'; };
-    document.head.appendChild(s);
-  }
-  calBtn.addEventListener('click', function () { if (valid()) loadEvents(); else connect(); });
-  document.getElementById('calForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var ti = document.getElementById('evTitle'), wh = document.getElementById('evWhen');
-    if (!ti.value.trim() || !wh.value) { calHint.textContent = 'Enter a title and a start time.'; return; }
-    if (!valid()) { calHint.textContent = 'Connect Google first.'; return; }
-    var s = new Date(wh.value + ':00+05:00');
-    api('calendars/primary/events', { method: 'POST', body: JSON.stringify({ summary: ti.value.trim(), start: { dateTime: s.toISOString() }, end: { dateTime: new Date(+s + 3600000).toISOString() } }) })
-      .then(function () { ti.value = ''; wh.value = ''; loadEvents(); })
-      .catch(function (err) { calHint.textContent = 'Could not add event (' + err.message + ').'; });
   });
-  loadEvents(); setInterval(function () { if (valid()) loadEvents(); }, 300000);
+  document.getElementById('clrPhotos').addEventListener('click', function () {
+    idb(function (d) { if (!d) return; var tx = d.transaction('p', 'readwrite'); tx.objectStore('p').clear(); tx.oncomplete = loadPhotos; });
+  });
+  document.getElementById('saverBtn').addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.add('saver'); });
+  document.addEventListener('click', function () { document.body.classList.remove('saver'); });
+  var idleT;
+  function bump() { clearTimeout(idleT); idleT = setTimeout(function () { if (photos.length) document.body.classList.add('saver'); }, 300000); }
+  ['touchstart', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, bump); });
+  bump(); loadPhotos(); setInterval(function () { if (photos.length > 1) showPhoto(); }, 30000);
 
   // ---- Full screen + keep awake ----
   document.getElementById('fsBtn').addEventListener('click', function () {

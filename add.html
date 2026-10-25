@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Add task</title>
+<style>
+body{font:17px -apple-system,system-ui,sans-serif;margin:0;padding:20px;max-width:520px;margin-inline:auto;background:#f2effb;color:#1d1a52}
+h1{font-size:1.4em;margin:0 0 14px}
+form{display:flex;flex-direction:column;gap:10px}
+input[type=text],input[type=date]{font:inherit;padding:12px;border:1px solid #d9d4ee;border-radius:8px;background:#fff;color:inherit}
+label{display:flex;gap:8px;align-items:center}
+button{font:inherit;font-weight:600;padding:14px;border:0;border-radius:8px;background:#2a2488;color:#fff}
+#m{min-height:1.4em;margin:12px 0;font-weight:600}
+details{margin-top:18px;color:#6c68a0}
+@media (prefers-color-scheme:dark){body{background:#0e0f22;color:#e9e7ff}input[type=text],input[type=date]{background:#15172e;border-color:#2b2d52}button{background:#b9b2ff;color:#0e0f22}details{color:#9a97c9}}
+</style></head><body>
+<h1>Add task to iPad</h1>
+<form id="f">
+  <input id="t" type="text" placeholder="Task" autocomplete="off" required>
+  <input id="d" type="date" aria-label="Due date (optional)">
+  <label><input id="s" type="checkbox"> &#9733; Starred</label>
+  <label><input id="y" type="checkbox"> Repeats daily</label>
+  <button type="submit">Send to iPad</button>
+</form>
+<p id="m" role="status"></p>
+<details id="c"><summary>Code</summary>
+  <p>Type the code from the iPad app: Settings, "Phone add-task code". You only do this once on this device.</p>
+  <input id="k" type="text" placeholder="Code" autocomplete="off" autocapitalize="off">
+</details>
+<script>
+var $=function(i){return document.getElementById(i)}, K='mc-code';
+var code=''; try{code=localStorage.getItem(K)||''}catch(e){}
+$('k').value=code; if(!code) $('c').open=true;
+$('k').addEventListener('change',function(){code=$('k').value.trim().toLowerCase();try{localStorage.setItem(K,code)}catch(e){}});
+$('f').addEventListener('submit',function(e){
+  e.preventDefault(); code=$('k').value.trim().toLowerCase();
+  if(!code){$('c').open=true;$('m').textContent='Enter the code first.';return;}
+  try{localStorage.setItem(K,code)}catch(x){}
+  fetch('https://ntfy.sh/mcl-'+code,{method:'POST',body:JSON.stringify({text:$('t').value.trim(),due:$('d').value,star:$('s').checked,daily:$('y').checked})})
+   .then(function(r){if(!r.ok)throw 0;$('m').textContent='Sent. It shows on the iPad within a couple of minutes.';$('t').value='';$('d').value='';$('s').checked=false;$('y').checked=false;})
+   .catch(function(){$('m').textContent='Could not send. Check your internet and the code.';});
+});
+</script></body></html>

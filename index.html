@@ -50,7 +50,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr);
-  grid-template-areas: "clock clock" "prayers prayers" "tasks tasks";
+  grid-template-areas: "clock clock" "prayers prayers" "tasks sched";
   gap: clamp(12px, 2.4vw, 26px) clamp(16px, 3vw, 36px);
 }
 .clock { grid-area: clock; min-width: 0; position: relative; }
@@ -146,7 +146,7 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glass:rgba(14,15,34,.78)}}
 :root[data-theme="dark"]{--glass:rgba(14,15,34,.78)}
 #bg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;background:center/cover no-repeat;opacity:0;transition:opacity .6s}
-body.hasbg .clock,body.hasbg .tasks,body.hasbg .cal,body.hasbg .prayers{background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:8px 14px}
+body.hasbg .clock,body.hasbg .tasks,body.hasbg .cal,body.hasbg .sched,body.hasbg .page,body.hasbg .prayers{background:var(--glass);border-radius:12px;padding:8px 14px}
 body.hasbg .clock{width:fit-content;max-width:100%;padding-right:118px}
 .time{font-weight:700}
 .day strong{font-weight:700}
@@ -156,12 +156,39 @@ body.hasbg .clock{width:fit-content;max-width:100%;padding-right:118px}
 body.hasbg .clock,body.hasbg .prayers{background:var(--glass2);-webkit-backdrop-filter:none;backdrop-filter:none;text-shadow:var(--halo)}
 body.hasbg .prayers{border-color:transparent}
 body.hasbg .plist li.next{text-shadow:none}
-body.saver .tasks,body.saver .cal,body.saver .tools{display:none}
+body.saver .tasks,body.saver .cal,body.saver .sched,body.saver .tabs,body.saver .tools{display:none}
 body.saver .wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"clock" "prayers"}
 body.saver .clock{align-self:end;padding-right:14px}
+body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;justify-content:center;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));background:var(--glass);z-index:6}
+.tabs button{flex:1;max-width:200px;background:transparent;color:var(--accent)}
+.tabs button.on,.flt button.on{background:var(--accent);color:var(--on-accent)}
+.page{height:100%;min-height:0;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.flt{display:flex;gap:6px}.flt button{padding:4px 12px;font-size:.85em}
+.task-form{flex-wrap:wrap}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mgrid b{text-align:center;font-size:.75em;color:var(--muted);font-weight:600}
+.mgrid button{padding:6px 0;background:var(--surface);color:var(--fg);border:1px solid var(--line);font-weight:500;position:relative}
+.mgrid button.sel{background:var(--accent);color:var(--on-accent)}
+.mgrid button.today{border:2px solid var(--accent)}
+.mgrid button.dot::after{content:"";position:absolute;left:50%;bottom:3px;width:5px;height:5px;margin-left:-2px;border-radius:50%;background:var(--accent)}
+.mgrid button.sel.dot::after{background:var(--on-accent)}
+.mgrid button.pad{visibility:hidden}
+.sched{grid-area:sched;min-width:0;min-height:0;display:flex;flex-direction:column;gap:6px}
+.sched-head{display:flex;justify-content:space-between;align-items:center}
+.sched-head button{padding:4px 10px;font-size:.8em}
+#schedList{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1;min-height:0;position:relative}
+#schedList li{padding:5px 8px;border-radius:8px;border-bottom:1px solid var(--line);cursor:pointer}
+#schedList .tm{color:var(--muted);font-size:.8em}
+#schedList .nt{display:none;font-size:.85em;color:var(--muted);margin-top:2px}
+#schedList li.now,#schedList li.now .tm,#schedList li.now .nt{background:var(--accent);color:var(--on-accent)}
+#schedList li.now .tm,#schedList li.now .nt{background:none}
+#schedList li.now .nt,#schedList li.open .nt{display:block}
+#schedList li.past{color:var(--done)}
+.sched-foot{font-size:.78em;color:var(--muted);margin:0;white-space:pre-line;max-height:5.5em;overflow-y:auto}
 @media (max-width: 640px) {
   html, body { height: auto; }
-  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks"; }
+  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks" "sched"; }
   .time { font-size: clamp(64px, 24vw, 130px); }
   .list { max-height: 50vh; }
   .clock .tools { position: static; flex-direction: row; margin-top: 6px; }
@@ -198,6 +225,12 @@ body.saver .clock{align-self:end;padding-right:14px}
     <p class="hint" id="taskHint"></p>
   </section>
 
+  <section class="sched" aria-label="Thithy daily task">
+    <div class="sched-head"><h2>Thithy daily task</h2><button class="ghost" id="schedEdit" type="button">Edit</button></div>
+    <ul id="schedList"></ul>
+    <p class="sched-foot" id="schedFoot"></p>
+  </section>
+
   <section class="prayers" aria-label="Prayer times for Malé">
     <div class="p-head">
       <h2>Prayer times · Malé</h2>
@@ -207,6 +240,28 @@ body.saver .clock{align-self:end;padding-right:14px}
     <p class="note">Calculated from sun position for Malé (4.18°N, 73.51°E). Compare with the official Maldives timetable and use Settings to adjust minutes.</p>
   </section>
 </main>
+
+<section class="page" id="pg-todo" hidden>
+  <h2>To-Do</h2>
+  <form class="task-form" id="pForm">
+    <input type="text" id="pText" placeholder="Add a task" autocomplete="off" aria-label="New task">
+    <input type="date" id="pDue" aria-label="Due date">
+    <label class="rep"><input type="checkbox" id="pStar"> &#9733;</label>
+    <label class="rep"><input type="checkbox" id="pDaily"> Daily</label>
+    <button type="submit">Add</button>
+  </form>
+  <div class="flt"><button class="ghost" data-f="open">Open</button><button class="ghost" data-f="all">All</button><button class="ghost" data-f="done">Done</button></div>
+  <ul class="list" id="pList"></ul>
+  <p class="hint">Tasks with a future date appear on the dashboard on their day. Starred and daily tasks always show there.</p>
+</section>
+<section class="page" id="pg-cal" hidden>
+  <div class="cal-head"><button class="ghost" id="mPrev" type="button">&lsaquo;</button><h2 id="mTitle"></h2><button class="ghost" id="mNext" type="button">&rsaquo;</button></div>
+  <div class="mgrid" id="mGrid"></div>
+  <h2 id="dTitle"></h2>
+  <ul class="list" id="dList"></ul>
+  <form class="cal-form" id="eForm"><input type="text" id="eText" placeholder="New event" aria-label="Event title" autocomplete="off"><input type="time" id="eTime" aria-label="Time"><button type="submit">Add</button></form>
+</section>
+<nav class="tabs"><button data-p="dash" class="on" type="button">Dashboard</button><button data-p="todo" type="button">To-Do</button><button data-p="cal" type="button">Calendar</button></nav>
 
 <dialog id="dlg">
   <form method="dialog" id="setForm">
@@ -229,6 +284,14 @@ body.saver .clock{align-self:end;padding-right:14px}
       <button type="button" class="ghost" id="cancelBtn">Cancel</button>
       <button type="submit" id="saveBtn">Save</button>
     </div>
+  </form>
+</dialog>
+<dialog id="schedDlg" style="max-width:min(94vw,640px);width:94vw">
+  <form method="dialog">
+    <h3>Thithy daily task</h3>
+    <p class="hint">One block per line: 07:12-13:00 | Title | note. Any other line shows at the bottom.</p>
+    <textarea id="schedTxt" rows="14" style="width:100%;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea>
+    <div class="set-actions"><button type="button" class="ghost" id="schedCancel">Cancel</button><button type="button" id="schedSave">Save</button></div>
   </form>
 </dialog>
 
@@ -363,43 +426,54 @@ body.saver .clock{align-self:end;padding-right:14px}
       el.date.textContent = n.d + ' ' + monthFmt.format(ref) + ' ' + n.y;
       el.hijri.textContent = hijriFmt ? hijriFmt.format(ref) + ' (approx.)' : '';
     }
-    if (n.s === 0 || !el.plist.children.length || tick.force) { renderPrayers(n); tick.force = false; }
+    renderPrayers(n); tick.force = false; renderSched();
   }
 
   // ---- Tasks ----
-  var tasks = load(LS_TASKS, null);
-  var seeded = false;
-  if (!Array.isArray(tasks)) {
-    seeded = true;
-    tasks = [
-      { id: 1, text: 'Example: Check ward handover notes', done: false },
-      { id: 2, text: 'Example: Call supplier about thin clients', done: false },
-      { id: 3, text: 'Example: Backup VDI settings', done: true }
-    ];
-  }
+  var tasks = load(LS_TASKS, []); if (!Array.isArray(tasks)) tasks = [];
+  var tf = 'open';
   var listEl = document.getElementById('taskList'), hintEl = document.getElementById('taskHint');
-  function renderTasks() {
-    listEl.innerHTML = '';
-    tasks.forEach(function (t) {
+  function todayISO() { var n = now(); return n.y + '-' + pad(n.m) + '-' + pad(n.d); }
+  function sorted(a) { return a.slice().sort(function (x, y) { return ((x.done ? 1 : 0) - (y.done ? 1 : 0)) || ((y.star ? 1 : 0) - (x.star ? 1 : 0)) || String(x.due || '9').localeCompare(String(y.due || '9')); }); }
+  function mkBtn(txt, label, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'del'; b.textContent = txt; b.setAttribute('aria-label', label); b.addEventListener('click', fn); return b; }
+  function fill(ul, p, arr) {
+    ul.innerHTML = '';
+    arr.forEach(function (t) {
       var li = document.createElement('li'); if (t.done) li.className = 'done';
-      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = 'task' + t.id;
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = p + t.id;
       cb.addEventListener('change', function () { t.done = cb.checked; t.doneDay = todayKey(); save(LS_TASKS, tasks); renderTasks(); });
-      var lb = document.createElement('label'); lb.htmlFor = cb.id; lb.textContent = (t.daily ? '\u21BB ' : '') + t.text;
-      var del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', 'Delete task');
-      del.addEventListener('click', function () { tasks = tasks.filter(function (x) { return x !== t; }); save(LS_TASKS, tasks); seeded = false; renderTasks(); });
-      li.appendChild(cb); li.appendChild(lb); li.appendChild(del); listEl.appendChild(li);
+      var lb = document.createElement('label'); lb.htmlFor = cb.id;
+      lb.textContent = (t.daily ? '\u21BB ' : '') + t.text + (t.due ? '  \u00B7 ' + t.due.slice(5) : '');
+      li.appendChild(cb); li.appendChild(lb);
+      li.appendChild(mkBtn(t.star ? '\u2605' : '\u2606', 'Star', function () { t.star = !t.star; save(LS_TASKS, tasks); renderTasks(); }));
+      li.appendChild(mkBtn('\u00D7', 'Delete task', function () { tasks = tasks.filter(function (x) { return x !== t; }); save(LS_TASKS, tasks); renderTasks(); }));
+      ul.appendChild(li);
     });
-    hintEl.textContent = seeded ? 'These are examples. Delete them or add your own.' : (tasks.length ? '' : 'No tasks. Add one above.');
+  }
+  function renderTasks() {
+    var td = todayISO();
+    var dash = sorted(tasks.filter(function (t) { return t.daily || t.star || !t.due || t.due <= td; }));
+    fill(listEl, 'd', dash);
+    hintEl.textContent = dash.length ? '' : 'No tasks today. Add one above.';
+    fill(document.getElementById('pList'), 'p', sorted(tasks.filter(function (t) { return tf === 'all' || (tf === 'done' ? t.done : !t.done); })));
+    Array.prototype.forEach.call(document.querySelectorAll('.flt button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-f') === tf ? ' on' : ''); });
+  }
+  function addTask(text, daily, due, star) {
+    text = text.trim(); if (!text) return false;
+    tasks.push({ id: Date.now(), text: text, done: false, daily: !!daily, due: due || '', star: !!star });
+    save(LS_TASKS, tasks); renderTasks(); return true;
   }
   document.getElementById('taskForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    var inp = document.getElementById('taskInput'), v = inp.value.trim();
-    if (!v) return;
-    if (seeded) { tasks = []; seeded = false; }
-    tasks.push({ id: Date.now(), text: v, done: false, daily: document.getElementById('taskDaily').checked });
-    document.getElementById('taskDaily').checked = false;
-    save(LS_TASKS, tasks); inp.value = ''; renderTasks();
+    var inp = document.getElementById('taskInput'), dl = document.getElementById('taskDaily');
+    if (addTask(inp.value, dl.checked, '', false)) { inp.value = ''; dl.checked = false; }
   });
+  document.getElementById('pForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = function (id) { return document.getElementById(id); };
+    if (addTask(f('pText').value, f('pDaily').checked, f('pDue').value, f('pStar').checked)) { f('pText').value = ''; f('pDue').value = ''; f('pDaily').checked = false; f('pStar').checked = false; }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.flt button'), function (b) { b.addEventListener('click', function () { tf = b.getAttribute('data-f'); renderTasks(); }); });
 
   // ---- Settings ----
   var dlg = document.getElementById('dlg');
@@ -421,6 +495,106 @@ body.saver .clock{align-self:end;padding-right:14px}
     ids.forEach(function (k) { cfg.off[k] = num('o_' + k, 0); });
     save(LS_CFG, cfg); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
   });
+
+  var SEED = [
+    "07:12-13:00 | Work | Focus on your work. Have your morning snack and drink water. If you get a break, spend 5-10 minutes recalling SCM Unit 1 definitions.",
+    "13:00-14:20 | Lunch and reset | Prepare and eat lunch. Feed your daughter and change out of work clothes. Rest briefly.",
+    "14:20-15:50 | Qur'an class | Get your daughter ready, walk her to class, and return home with enough time for the transition.",
+    "16:00-16:45 | SCM Unit 1 revision | Revise definitions, SCM components, objectives, logistics, inventory, technology and competitive advantage. Practise answering without looking at your notes.",
+    "16:45-17:00 | Snack and break | Have a snack, drink water and give your mind a rest.",
+    "17:00-17:45 | SCM Unit 2 revision | Focus on competitive strategy, supply chain strategy, strategic alignment and examples from your lecture notes.",
+    "17:45-18:15 | Shower and freshen up | Take your daily shower if you haven't already, change into clean clothes, and prepare for the evening.",
+    "18:15-19:15 | Dinner and family time | Eat a satisfying meal and spend time with your daughter.",
+    "19:15-20:00 | Mixed SCM practice test | Answer questions from both units. Mark any topics you cannot explain confidently and review only those.",
+    "20:00-20:45 | Daughter's bedtime and family routine | Help her settle and prepare what you need for tomorrow.",
+    "20:45-21:10 | Final Project | Check Chapter 1 and identify missing sections. Don't attempt a major rewrite tonight.",
+    "21:10-21:30 | Bedtime hygiene | Brush your teeth, wash your face, apply moisturizer, change into sleepwear and prepare for bed.",
+    "Priorities: 1) SCM: revise both units and do one mixed practice. 2) Final Project: find the missing Chapter 1 sections. 3) Self-care: regular meals, shower and hygiene, early bed.",
+    "Exercise is optional: if you feel fully recovered, an easy 10-15 minute walk around 17:00; otherwise rest."
+  ].join("\n");
+  var LS_SCH = 'male-clock-sched', LS_EV = 'male-clock-events';
+  var schedTxt = load(LS_SCH, null); if (typeof schedTxt !== 'string') schedTxt = SEED;
+  var lastNow = -2;
+  function renderSched() {
+    var n = now(), cur = n.h * 60 + n.mi, blocks = [], notes = [];
+    schedTxt.split('\n').forEach(function (l) {
+      l = l.trim(); if (!l) return;
+      var m = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\|\s*([^|]+?)\s*(?:\|\s*(.*))?$/.exec(l);
+      if (m) blocks.push({ s: +m[1] * 60 + +m[2], e: +m[3] * 60 + +m[4], t: m[5], d: m[6] || '' }); else notes.push(l);
+    });
+    var ul = document.getElementById('schedList'), nowLi = null, idx = -1;
+    ul.innerHTML = '';
+    blocks.forEach(function (b, i) {
+      var li = document.createElement('li');
+      li.className = cur >= b.e ? 'past' : (cur >= b.s ? 'now' : '');
+      li.innerHTML = '<div class="tm"></div><div class="tt"></div><div class="nt"></div>';
+      li.children[0].textContent = clockStr(b.s / 60) + ' \u2013 ' + clockStr(b.e / 60);
+      li.children[1].textContent = b.t; li.children[2].textContent = b.d;
+      li.addEventListener('click', function () { li.classList.toggle('open'); });
+      if (li.className === 'now') { nowLi = li; idx = i; }
+      ul.appendChild(li);
+    });
+    if (nowLi && idx !== lastNow) ul.scrollTop = nowLi.offsetTop - 4;
+    lastNow = idx;
+    document.getElementById('schedFoot').textContent = notes.join('\n');
+  }
+  var sd = document.getElementById('schedDlg');
+  document.getElementById('schedEdit').addEventListener('click', function () { document.getElementById('schedTxt').value = schedTxt; if (sd.showModal) sd.showModal(); else sd.setAttribute('open', ''); });
+  document.getElementById('schedCancel').addEventListener('click', function () { sd.close(); });
+  document.getElementById('schedSave').addEventListener('click', function () { schedTxt = document.getElementById('schedTxt').value; save(LS_SCH, schedTxt); lastNow = -2; renderSched(); sd.close(); });
+
+  // ---- Calendar page (events stay on this iPad) ----
+  var events = load(LS_EV, []); if (!Array.isArray(events)) events = [];
+  var cm = null, sel = null;
+  function iso(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+  function renderCal() {
+    var n = now();
+    if (!cm) { cm = { y: n.y, m: n.m }; sel = iso(n.y, n.m, n.d); }
+    var first = new Date(Date.UTC(cm.y, cm.m - 1, 1)), dow = first.getUTCDay(), days = new Date(Date.UTC(cm.y, cm.m, 0)).getUTCDate(), td = iso(n.y, n.m, n.d);
+    document.getElementById('mTitle').textContent = monthFmt.format(first) + ' ' + cm.y;
+    var g = document.getElementById('mGrid'); g.innerHTML = '';
+    'SMTWTFS'.split('').forEach(function (c) { var b = document.createElement('b'); b.textContent = c; g.appendChild(b); });
+    for (var i = 0; i < dow; i++) { var pd = document.createElement('button'); pd.className = 'pad'; g.appendChild(pd); }
+    for (var d = 1; d <= days; d++) (function (d) {
+      var k = iso(cm.y, cm.m, d), b = document.createElement('button'); b.type = 'button'; b.textContent = d;
+      var has = events.some(function (e) { return e.date === k; }) || tasks.some(function (t) { return t.due === k; });
+      b.className = (k === sel ? 'sel ' : '') + (k === td ? 'today ' : '') + (has ? 'dot' : '');
+      b.addEventListener('click', function () { sel = k; renderCal(); });
+      g.appendChild(b);
+    })(d);
+    document.getElementById('dTitle').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(sel + 'T12:00:00+05:00'));
+    var ul = document.getElementById('dList'); ul.innerHTML = '';
+    function row(w, t, delFn) {
+      var li = document.createElement('li'); li.className = 'ev';
+      var a = document.createElement('span'); a.className = 'w'; a.textContent = w;
+      var c = document.createElement('span'); c.className = 't'; c.textContent = t;
+      li.appendChild(a); li.appendChild(c); if (delFn) li.appendChild(mkBtn('\u00D7', 'Delete event', delFn)); ul.appendChild(li);
+    }
+    events.filter(function (e) { return e.date === sel; }).sort(function (x, y) { return String(x.time).localeCompare(String(y.time)); })
+      .forEach(function (e) { row(e.time || 'All day', e.text, function () { events = events.filter(function (x) { return x !== e; }); save(LS_EV, events); renderCal(); }); });
+    tasks.filter(function (t) { return t.due === sel; }).forEach(function (t) { row('Task', t.text + (t.done ? ' \u2713' : '')); });
+    if (!ul.children.length) { var h = document.createElement('li'); h.className = 'hint'; h.textContent = 'Nothing on this day.'; ul.appendChild(h); }
+  }
+  document.getElementById('mPrev').addEventListener('click', function () { cm.m--; if (cm.m < 1) { cm.m = 12; cm.y--; } renderCal(); });
+  document.getElementById('mNext').addEventListener('click', function () { cm.m++; if (cm.m > 12) { cm.m = 1; cm.y++; } renderCal(); });
+  document.getElementById('eForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = document.getElementById('eText'), w = document.getElementById('eTime');
+    if (!t.value.trim()) return;
+    events.push({ id: Date.now(), date: sel, time: w.value, text: t.value.trim() });
+    save(LS_EV, events); t.value = ''; w.value = ''; renderCal();
+  });
+
+  // ---- Tabs ----
+  var tabBtns = document.querySelectorAll('.tabs button');
+  function go(p) {
+    document.querySelector('.wrap').hidden = p !== 'dash';
+    document.getElementById('pg-todo').hidden = p !== 'todo';
+    document.getElementById('pg-cal').hidden = p !== 'cal';
+    Array.prototype.forEach.call(tabBtns, function (b) { b.className = b.getAttribute('data-p') === p ? 'on' : ''; });
+    if (p === 'cal') renderCal(); else if (p === 'todo') renderTasks(); else renderSched();
+  }
+  Array.prototype.forEach.call(tabBtns, function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); go(b.getAttribute('data-p')); }); });
 
   function todayKey() { var n = now(); return n.y + '-' + n.m + '-' + n.d; }
   function resetDaily() {
@@ -489,9 +663,16 @@ body.saver .clock{align-self:end;padding-right:14px}
   document.getElementById('saverBtn').addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.add('saver'); });
   document.addEventListener('click', function () { document.body.classList.remove('saver'); });
   var idleT;
-  function bump() { clearTimeout(idleT); idleT = setTimeout(function () { if (photos.length) document.body.classList.add('saver'); }, 300000); }
+  var dimmed = false, dimT;
+  function power(m) { try { window.webkit.messageHandlers.power.postMessage(m); } catch (e) {} }
+  function bump() {
+    clearTimeout(idleT); clearTimeout(dimT);
+    if (dimmed) { dimmed = false; power('bright'); }
+    dimT = setTimeout(function () { dimmed = true; power('dim'); }, 180000);
+    idleT = setTimeout(function () { if (photos.length) document.body.classList.add('saver'); }, 300000);
+  }
   ['touchstart', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, bump); });
-  bump(); loadPhotos(); setInterval(function () { if (photos.length > 1) showPhoto(); }, 30000);
+  bump(); loadPhotos(); setInterval(function () { if (photos.length > 1 && !document.hidden) showPhoto(); }, 60000);
 
   // ---- Full screen + keep awake ----
   document.getElementById('fsBtn').addEventListener('click', function () {
@@ -499,7 +680,8 @@ body.saver .clock{align-self:end;padding-right:14px}
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {}
   });
 
-  renderTasks(); tick(); setInterval(tick, 1000);
+  renderTasks(); (function loop() { tick(); setTimeout(loop, (61 - new Date().getSeconds()) * 1000); })();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
 })();
 </script>
 

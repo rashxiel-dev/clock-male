@@ -281,8 +281,10 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
       <input id="s_ical" class="set-wide" type="text" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" autocomplete="off" autocapitalize="off">
       <label for="s_code" class="set-wide">Phone add-task code (8+ letters or numbers, same code on your phone page)</label>
       <input id="s_code" class="set-wide" type="text" autocomplete="off" autocapitalize="off">
+      <p class="hint set-wide" id="pollStatus"></p>
     </div>
     <div class="set-actions">
+      <button type="button" class="ghost" id="chkNow">Check now</button>
       <button type="button" class="ghost" id="clrPhotos">Clear photos</button>
       <button type="button" class="ghost" id="resetBtn">Reset</button>
       <button type="button" class="ghost" id="cancelBtn">Cancel</button>
@@ -487,6 +489,7 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     document.getElementById('s_fa').value = c.fa;
     document.getElementById('s_ia').value = c.ia;
     document.getElementById('s_ical').value = cfg.ical || ''; document.getElementById('s_code').value = cfg.code || '';
+    document.getElementById('pollStatus').textContent = pollTxt || 'Not checked yet.';
     ids.forEach(function (k) { document.getElementById('o_' + k).value = c.off[k]; });
   }
   document.getElementById('setBtn').addEventListener('click', function () { fillForm(cfg); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
@@ -708,21 +711,26 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     cfg.code = Array.prototype.map.call(ra, function (b) { return 'abcdefghijklmnopqrstuvwxyz0123456789'.charAt(b % 36); }).join(''); save(LS_CFG, cfg);
   }
   var LS_SINCE = 'male-clock-since', LS_SEEN = 'male-clock-seen';
+  var pollTxt = '';
+  function pst(x) { pollTxt = x; var e = document.getElementById('pollStatus'); if (e) e.textContent = x; }
   function pollRemote() {
-    var since = load(LS_SINCE, 0), seen = load(LS_SEEN, []);
+    var since = load(LS_SINCE, 0), seen = load(LS_SEEN, []), got = 0;
+    pst('Checking...');
     fetch('https://ntfy.sh/mcl-' + cfg.code + '/json?poll=1' + (since ? '&since=' + since : ''))
-      .then(function (r) { return r.text(); })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(function (t) {
         t.split('\n').forEach(function (l) {
           var m; try { m = JSON.parse(l); } catch (e) { return; }
           if (m.event !== 'message' || seen.indexOf(m.id) >= 0) return;
           seen.push(m.id); since = Math.max(since, m.time || 0);
           var o; try { o = JSON.parse(m.message); } catch (e) { o = { text: m.message }; }
-          if (o && o.text) addTask(String(o.text), o.daily, o.due, o.star);
+          if (o && o.text && addTask(String(o.text), o.daily, o.due, o.star)) got++;
         });
         save(LS_SINCE, since); save(LS_SEEN, seen.slice(-100));
-      }).catch(function () {});
+        var n = now(); pst('Last check ' + pad(n.h) + ':' + pad(n.mi) + ' - ' + got + ' new task(s). Code: ' + cfg.code);
+      }).catch(function (e) { pst('Could not reach ntfy.sh (' + (e && e.message ? e.message : e) + ').'); });
   }
+  document.getElementById('chkNow').addEventListener('click', pollRemote);
   pollRemote(); setInterval(function () { if (!document.hidden) pollRemote(); }, 120000);
 
   function todayKey() { var n = now(); return n.y + '-' + n.m + '-' + n.d; }

@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Malé Clock">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,700;6..96,900&family=Hanken+Grotesk:wght@400;500;600&display=swap">
 <style>
 /* Layout: wall-clock dashboard. Big time + date top-left, tasks bottom-left, prayer list full height on the right. Stacks on phones. */
 :root {
@@ -148,6 +148,14 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
 #bg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;background:center/cover no-repeat;opacity:0;transition:opacity .6s}
 body.hasbg .clock,body.hasbg .tasks,body.hasbg .cal,body.hasbg .prayers{background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:8px 14px}
 body.hasbg .clock{width:fit-content;max-width:100%;padding-right:118px}
+.time{font-weight:700}
+.day strong{font-weight:700}
+:root{--glass2:rgba(250,248,255,.3);--halo:0 0 8px rgba(250,248,255,.95),0 0 2px rgba(250,248,255,.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glass2:rgba(14,15,34,.3);--halo:0 0 8px rgba(14,15,34,.95),0 0 2px rgba(14,15,34,.9)}}
+:root[data-theme="dark"]{--glass2:rgba(14,15,34,.3);--halo:0 0 8px rgba(14,15,34,.95),0 0 2px rgba(14,15,34,.9)}
+body.hasbg .clock,body.hasbg .prayers{background:var(--glass2);-webkit-backdrop-filter:none;backdrop-filter:none;text-shadow:var(--halo)}
+body.hasbg .prayers{border-color:transparent}
+body.hasbg .plist li.next{text-shadow:none}
 body.saver .tasks,body.saver .cal,body.saver .tools{display:none}
 body.saver .wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"clock" "prayers"}
 body.saver .clock{align-self:end;padding-right:14px}

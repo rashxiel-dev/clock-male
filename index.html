@@ -138,7 +138,8 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
 .plist .at,.plist li.minor .at{font-size:1.25em}
 .prayers{padding:8px 12px;gap:4px}
 .note{display:none}
-.clock .tools{position:absolute;top:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin:0}
+.clock{padding-right:112px}
+.clock .tools{position:absolute;top:4px;right:6px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin:0}
 #wx{color:var(--fg)}
 .rep{display:flex;align-items:center;gap:4px;white-space:nowrap;color:var(--muted)}
 :root{--glass:rgba(250,248,255,.82)}
@@ -146,16 +147,17 @@ dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500
 :root[data-theme="dark"]{--glass:rgba(14,15,34,.78)}
 #bg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;background:center/cover no-repeat;opacity:0;transition:opacity .6s}
 body.hasbg .clock,body.hasbg .tasks,body.hasbg .cal,body.hasbg .prayers{background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:8px 14px}
-body.hasbg .clock{width:fit-content;max-width:100%}
+body.hasbg .clock{width:fit-content;max-width:100%;padding-right:118px}
 body.saver .tasks,body.saver .cal,body.saver .tools{display:none}
 body.saver .wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"clock" "prayers"}
-body.saver .clock{align-self:end}
+body.saver .clock{align-self:end;padding-right:14px}
 @media (max-width: 640px) {
   html, body { height: auto; }
   .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks"; }
   .time { font-size: clamp(64px, 24vw, 130px); }
   .list { max-height: 50vh; }
   .clock .tools { position: static; flex-direction: row; margin-top: 6px; }
+  .clock, body.hasbg .clock { padding-right: 14px; }
   .plist { flex-wrap: wrap; } .plist li { flex: 1 1 30%; }
 }
 @media (prefers-reduced-motion: no-preference) {

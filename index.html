@@ -279,8 +279,8 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
       <label for="o_isha">Isha adjust (min)</label><input id="o_isha" type="number" step="1">
       <label for="s_ical" class="set-wide">Google Calendar secret iCal link</label>
       <input id="s_ical" class="set-wide" type="text" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" autocomplete="off" autocapitalize="off">
-      <label for="s_code" class="set-wide">Phone add-task code (type it once on the phone page)</label>
-      <input id="s_code" class="set-wide" type="text" readonly>
+      <label for="s_code" class="set-wide">Phone add-task code (8+ letters or numbers, same code on your phone page)</label>
+      <input id="s_code" class="set-wide" type="text" autocomplete="off" autocapitalize="off">
     </div>
     <div class="set-actions">
       <button type="button" class="ghost" id="clrPhotos">Clear photos</button>
@@ -498,8 +498,10 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     cfg.h24 = +document.getElementById('s_h24').value === 12 ? 12 : 24;
     cfg.fa = num('s_fa', 18); cfg.ia = num('s_ia', 18);
     cfg.ical = document.getElementById('s_ical').value.trim();
+    var nc = document.getElementById('s_code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (nc.length >= 8 && nc !== cfg.code) { cfg.code = nc; save(LS_SINCE, 0); save(LS_SEEN, []); }
     ids.forEach(function (k) { cfg.off[k] = num('o_' + k, 0); });
-    save(LS_CFG, cfg); loadIcal(); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
+    save(LS_CFG, cfg); loadIcal(); pollRemote(); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
   });
 
   var SEED = [

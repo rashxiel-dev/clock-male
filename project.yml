@@ -1,0 +1,27 @@
+name: MaleClock
+options:
+  bundleIdPrefix: com.local
+targets:
+  MaleClock:
+    type: application
+    platform: iOS
+    deploymentTarget: "13.0"
+    sources:
+      - AppDelegate.swift
+      - index.html
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Malé Clock
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.local.maleclock
+      TARGETED_DEVICE_FAMILY: "2"
+      SWIFT_VERSION: "5.0"
+      CODE_SIGNING_ALLOWED: "NO"

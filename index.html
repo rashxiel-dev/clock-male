@@ -1,0 +1,481 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Malé Wall Clock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Malé Clock">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Layout: wall-clock dashboard. Big time + date top-left, tasks bottom-left, prayer list full height on the right. Stacks on phones. */
+:root {
+  --bg: #f2effb;
+  --surface: #faf8ff;
+  --fg: #1d1a52;
+  --muted: #6c68a0;
+  --line: #d9d4ee;
+  --accent: #2a2488;
+  --accent-soft: #dcd6f7;
+  --on-accent: #ffffff;
+  --done: #9a96c4;
+  --font-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --font-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0f22; --surface: #15172e; --fg: #e9e7ff; --muted: #9a97c9; --line: #2b2d52;
+    --accent: #b9b2ff; --accent-soft: #2a2766; --on-accent: #0e0f22; --done: #62609a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e0f22; --surface: #15172e; --fg: #e9e7ff; --muted: #9a97c9; --line: #2b2d52;
+  --accent: #b9b2ff; --accent-soft: #2a2766; --on-accent: #0e0f22; --done: #62609a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1.9vw, 17px);
+  padding-block: clamp(10px, 2.2vw, 22px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "clock prayers" "tasks prayers" "cal prayers";
+  gap: clamp(12px, 2.4vw, 26px) clamp(16px, 3vw, 36px);
+}
+.clock { grid-area: clock; min-width: 0; position: relative; }
+.time {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(64px, 17.5vw, 190px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+.time .sep { color: var(--accent); }
+.time .ap { font-family: var(--font-body); font-size: 0.17em; letter-spacing: 0.06em; margin-left: 0.3em; color: var(--muted); font-weight: 500; }
+.day { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2em 1em; margin-top: 0.4em; }
+.day strong { font-family: var(--font-display); font-weight: 500; font-size: 1.9em; }
+.day span { color: var(--muted); }
+
+.tasks { grid-area: tasks; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+h2 { margin: 0; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); font-weight: 600; }
+.task-form { display: flex; gap: 8px; }
+.task-form input[type=text] {
+  flex: 1; min-width: 0; font: inherit; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+button {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); padding: 8px 14px;
+}
+button.ghost { background: transparent; color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+ul.list { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; }
+.list li { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--line); }
+.list li label { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
+.list li.done label { color: var(--done); text-decoration: line-through; }
+.list input[type=checkbox] { width: 1.15em; height: 1.15em; accent-color: var(--accent); flex: none; }
+.list .del { border: 0; background: transparent; color: var(--muted); padding: 2px 8px; font-size: 1.2em; line-height: 1; }
+.hint { color: var(--muted); font-size: 0.82em; margin: 0; }
+
+.prayers {
+  grid-area: prayers; min-width: 0; min-height: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: clamp(8px, 1.4vw, 14px); display: flex; flex-direction: column; gap: 6px; overflow-y: auto;
+}
+.p-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.next-line { margin: 0; color: var(--muted); }
+.next-line b { color: var(--fg); font-weight: 600; }
+.plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; flex: 1; min-height: 0; justify-content: space-around; }
+.plist li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 0.2em 0.6em; border-radius: 8px;
+}
+.plist .name { font-weight: 500; }
+.plist .at { font-family: var(--font-display); font-size: 1.4em; font-variant-numeric: lining-nums tabular-nums; line-height: 1.1; }
+.plist li.minor .name, .plist li.minor .at { color: var(--muted); }
+.plist li.minor .at { font-size: 1.1em; }
+.plist li.passed .name, .plist li.passed .at { color: var(--done); }
+.plist li.next { background: var(--accent); color: var(--on-accent); }
+.plist li.next .name, .plist li.next .at { color: var(--on-accent); }
+.note { margin: 0; font-size: 0.78em; color: var(--muted); }
+
+.tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+@media (max-height: 820px) { .note { display: none; } }
+.tools button { padding: 5px 10px; font-size: 0.8em; }
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); max-width: min(92vw, 460px); padding: 18px; }
+dialog::backdrop { background: rgba(10,10,30,0.55); }
+dialog h3 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 500; font-size: 1.5em; }
+.set-grid { display: grid; grid-template-columns: 1fr 90px; gap: 8px 12px; align-items: center; }
+.set-grid input, .set-grid select { font: inherit; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; width: 100%; min-width: 0; }
+.set-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+.cal{grid-area:cal;min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px}
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal-head button{padding:5px 10px;font-size:.8em}
+.list li.ev{gap:12px;align-items:baseline}
+.ev .w{flex:none;width:10.5em;color:var(--muted)}
+.ev .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.cal-form{display:flex;gap:8px;flex-wrap:wrap}
+.cal-form input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+.cal-form input[type=text]{flex:1 1 9em}
+.set-wide{grid-column:1/-1}
+@media (max-width: 640px) {
+  html, body { height: auto; }
+  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks" "cal"; }
+  .time { font-size: clamp(64px, 24vw, 130px); }
+  .list { max-height: 50vh; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .plist li { transition: background-color .3s; }
+}
+</style>
+
+<main class="wrap">
+  <section class="clock" aria-label="Time and date">
+    <div class="time" id="time" aria-live="off">--:--</div>
+    <div class="day"><strong id="dayname">&nbsp;</strong><span id="date"></span><span id="hijri"></span></div>
+  </section>
+
+  <section class="tasks" aria-label="Tasks">
+    <h2>Tasks today</h2>
+    <form class="task-form" id="taskForm">
+      <input type="text" id="taskInput" placeholder="Add a task" autocomplete="off" aria-label="New task">
+      <button type="submit">Add</button>
+    </form>
+    <ul class="list" id="taskList"></ul>
+    <p class="hint" id="taskHint"></p>
+  </section>
+
+  <section class="cal" aria-label="Google Calendar">
+    <div class="cal-head"><h2>Calendar</h2><button class="ghost" id="calBtn" type="button">Connect Google</button></div>
+    <ul class="list" id="calList"></ul>
+    <form class="cal-form" id="calForm">
+      <input type="text" id="evTitle" placeholder="New event" aria-label="Event title" autocomplete="off">
+      <input type="datetime-local" id="evWhen" aria-label="Event start">
+      <button type="submit">Add</button>
+    </form>
+    <p class="hint" id="calHint"></p>
+  </section>
+
+  <section class="prayers" aria-label="Prayer times for Malé">
+    <div class="p-head">
+      <h2>Prayer times · Malé</h2>
+      <p class="next-line" id="nextLine"></p>
+    </div>
+    <ul class="plist" id="plist"></ul>
+    <p class="note">Calculated from sun position for Malé (4.18°N, 73.51°E). Compare with the official Maldives timetable and use Settings to adjust minutes.</p>
+    <div class="tools">
+      <button class="ghost" id="setBtn" type="button">Settings</button>
+      <button class="ghost" id="fsBtn" type="button">Full screen</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="setForm">
+    <h3>Settings</h3>
+    <div class="set-grid">
+      <label for="s_h24">Time format</label>
+      <select id="s_h24"><option value="24">24-hour</option><option value="12">12-hour</option></select>
+      <label for="s_fa">Fajr angle (°)</label><input id="s_fa" type="number" step="0.5" min="10" max="25">
+      <label for="s_ia">Isha angle (°)</label><input id="s_ia" type="number" step="0.5" min="10" max="25">
+      <label for="o_fajr">Fajr adjust (min)</label><input id="o_fajr" type="number" step="1">
+      <label for="o_sunrise">Sunrise adjust (min)</label><input id="o_sunrise" type="number" step="1">
+      <label for="o_zuhr">Zuhr adjust (min)</label><input id="o_zuhr" type="number" step="1">
+      <label for="o_asr">Asr adjust (min)</label><input id="o_asr" type="number" step="1">
+      <label for="o_magrib">Magrib adjust (min)</label><input id="o_magrib" type="number" step="1">
+      <label for="o_isha">Isha adjust (min)</label><input id="o_isha" type="number" step="1">
+      <label for="s_cid" class="set-wide">Google Client ID (for Calendar)</label>
+      <input id="s_cid" class="set-wide" type="text" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="set-actions">
+      <button type="button" class="ghost" id="resetBtn">Reset</button>
+      <button type="button" class="ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" id="saveBtn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var LAT = 4.1755, LNG = 73.5093, TZ = 5, ZONE = 'Indian/Maldives';
+  var RAD = Math.PI / 180;
+  var DEFAULTS = { h24: 24, fa: 18, ia: 18, off: { fajr: 0, sunrise: 0, zuhr: 1, asr: 0, magrib: 1, isha: 0 } };
+  var LS_CFG = 'male-clock-cfg', LS_TASKS = 'male-clock-tasks';
+
+  function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  var cfg = Object.assign(clone(DEFAULTS), load(LS_CFG, {}));
+  cfg.off = Object.assign(clone(DEFAULTS.off), cfg.off || {});
+
+  var sin = function (d) { return Math.sin(d * RAD); }, cos = function (d) { return Math.cos(d * RAD); };
+  function fix(a, b) { a = a - b * Math.floor(a / b); return a; }
+
+  function julian(y, m, d) {
+    if (m <= 2) { y -= 1; m += 12; }
+    var A = Math.floor(y / 100), B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
+  }
+  function sunPos(jd) {
+    var D = jd - 2451545.0;
+    var g = fix(357.529 + 0.98560028 * D, 360);
+    var q = fix(280.459 + 0.98564736 * D, 360);
+    var L = fix(q + 1.915 * sin(g) + 0.020 * sin(2 * g), 360);
+    var e = 23.439 - 0.00000036 * D;
+    var RA = fix(Math.atan2(cos(e) * sin(L), cos(L)) / RAD / 15, 24);
+    return { decl: Math.asin(sin(e) * sin(L)) / RAD, eqt: q / 15 - RA };
+  }
+  function prayerTimes(y, m, d) {
+    var jd = julian(y, m, d) - LNG / 360 + 0.5;
+    var s = sunPos(jd);
+    var mid = fix(12 - s.eqt, 24);
+    function T(angle) {
+      var v = (-sin(angle) - sin(s.decl) * sin(LAT)) / (cos(s.decl) * cos(LAT));
+      return Math.acos(Math.max(-1, Math.min(1, v))) / RAD / 15;
+    }
+    var asrAngle = -Math.atan(1 / (1 + Math.tan(Math.abs(LAT - s.decl) * RAD))) / RAD;
+    var shift = TZ - LNG / 15, o = cfg.off;
+    return {
+      fajr: mid - T(cfg.fa) + shift + o.fajr / 60,
+      sunrise: mid - T(0.833) + shift + o.sunrise / 60,
+      zuhr: mid + shift + o.zuhr / 60,
+      asr: mid + T(asrAngle) + shift + o.asr / 60,
+      magrib: mid + T(0.833) + shift + o.magrib / 60,
+      isha: mid + T(cfg.ia) + shift + o.isha / 60
+    };
+  }
+
+  var ROWS = [
+    ['fajr', 'Fajr', false], ['sunrise', 'Sunrise', true], ['zuhr', 'Zuhr', false],
+    ['asr', 'Asr', false], ['magrib', 'Magrib', false], ['isha', 'Isha', false]
+  ];
+
+  var fmtParts = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'long' });
+  var monthFmt = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, month: 'long' });
+  var hijriFmt;
+  try { hijriFmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { timeZone: ZONE, day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { hijriFmt = null; }
+
+  function now() {
+    var o = {}, p = fmtParts.formatToParts(new Date());
+    p.forEach(function (x) { o[x.type] = x.value; });
+    return { y: +o.year, m: +o.month, d: +o.day, h: +o.hour, mi: +o.minute, s: +o.second, wd: o.weekday };
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function clockStr(hours) {
+    var tot = Math.round(hours * 60), h = Math.floor(tot / 60) % 24, m = tot % 60;
+    if (cfg.h24 === 12) { var ap = h >= 12 ? 'PM' : 'AM'; var hh = h % 12 || 12; return hh + ':' + pad(m) + ' ' + ap; }
+    return pad(h) + ':' + pad(m);
+  }
+  function dur(hours) {
+    var mins = Math.max(0, Math.round(hours * 60)), h = Math.floor(mins / 60), m = mins % 60;
+    return h ? h + 'h ' + m + 'm' : m + ' min';
+  }
+
+  var el = {
+    time: document.getElementById('time'), dayname: document.getElementById('dayname'),
+    date: document.getElementById('date'), hijri: document.getElementById('hijri'),
+    plist: document.getElementById('plist'), nextLine: document.getElementById('nextLine')
+  };
+  var lastDay = '', times = null;
+
+  function renderPrayers(n) {
+    var nowH = n.h + n.mi / 60 + n.s / 3600;
+    var nextKey = null, nextAt = 0;
+    for (var i = 0; i < ROWS.length; i++) {
+      var k = ROWS[i][0]; if (ROWS[i][2]) continue;
+      if (times[k] > nowH) { nextKey = k; nextAt = times[k] - nowH; break; }
+    }
+    if (!nextKey) {
+      var tm = new Date(Date.UTC(n.y, n.m - 1, n.d + 1));
+      var t2 = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate());
+      nextKey = 'fajr'; nextAt = 24 - nowH + t2.fajr;
+    }
+    el.plist.innerHTML = '';
+    ROWS.forEach(function (r) {
+      var li = document.createElement('li');
+      var cls = [];
+      if (r[2]) cls.push('minor');
+      if (r[0] === nextKey) cls.push('next'); else if (times[r[0]] < nowH) cls.push('passed');
+      li.className = cls.join(' ');
+      li.innerHTML = '<span class="name"></span><span class="at"></span>';
+      li.children[0].textContent = r[1];
+      li.children[1].textContent = clockStr(times[r[0]]);
+      el.plist.appendChild(li);
+    });
+    var label = ROWS.filter(function (r) { return r[0] === nextKey; })[0][1];
+    el.nextLine.innerHTML = '';
+    var b = document.createElement('b'); b.textContent = label;
+    el.nextLine.appendChild(b);
+    el.nextLine.appendChild(document.createTextNode(' in ' + dur(nextAt)));
+  }
+
+  function tick() {
+    var n = now();
+    var t = cfg.h24 === 12
+      ? ((n.h % 12 || 12) + '').padStart(2, '0') + '<span class="sep">:</span>' + pad(n.mi) + '<span class="ap">' + (n.h >= 12 ? 'PM' : 'AM') + '</span>'
+      : pad(n.h) + '<span class="sep">:</span>' + pad(n.mi);
+    if (el.time.innerHTML !== t) el.time.innerHTML = t;
+    var key = n.y + '-' + n.m + '-' + n.d;
+    if (key !== lastDay) {
+      lastDay = key;
+      times = prayerTimes(n.y, n.m, n.d);
+      el.dayname.textContent = n.wd;
+      var ref = new Date(Date.UTC(n.y, n.m - 1, n.d, 7));
+      el.date.textContent = n.d + ' ' + monthFmt.format(ref) + ' ' + n.y;
+      el.hijri.textContent = hijriFmt ? hijriFmt.format(ref) + ' (approx.)' : '';
+    }
+    if (n.s === 0 || !el.plist.children.length || tick.force) { renderPrayers(n); tick.force = false; }
+  }
+
+  // ---- Tasks ----
+  var tasks = load(LS_TASKS, null);
+  var seeded = false;
+  if (!Array.isArray(tasks)) {
+    seeded = true;
+    tasks = [
+      { id: 1, text: 'Example: Check ward handover notes', done: false },
+      { id: 2, text: 'Example: Call supplier about thin clients', done: false },
+      { id: 3, text: 'Example: Backup VDI settings', done: true }
+    ];
+  }
+  var listEl = document.getElementById('taskList'), hintEl = document.getElementById('taskHint');
+  function renderTasks() {
+    listEl.innerHTML = '';
+    tasks.forEach(function (t) {
+      var li = document.createElement('li'); if (t.done) li.className = 'done';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = 'task' + t.id;
+      cb.addEventListener('change', function () { t.done = cb.checked; save(LS_TASKS, tasks); renderTasks(); });
+      var lb = document.createElement('label'); lb.htmlFor = cb.id; lb.textContent = t.text;
+      var del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', 'Delete task');
+      del.addEventListener('click', function () { tasks = tasks.filter(function (x) { return x !== t; }); save(LS_TASKS, tasks); seeded = false; renderTasks(); });
+      li.appendChild(cb); li.appendChild(lb); li.appendChild(del); listEl.appendChild(li);
+    });
+    hintEl.textContent = seeded ? 'These are examples. Delete them or add your own.' : (tasks.length ? '' : 'No tasks. Add one above.');
+  }
+  document.getElementById('taskForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var inp = document.getElementById('taskInput'), v = inp.value.trim();
+    if (!v) return;
+    if (seeded) { tasks = []; seeded = false; }
+    tasks.push({ id: Date.now(), text: v, done: false });
+    save(LS_TASKS, tasks); inp.value = ''; renderTasks();
+  });
+
+  // ---- Settings ----
+  var dlg = document.getElementById('dlg');
+  var ids = ['fajr', 'sunrise', 'zuhr', 'asr', 'magrib', 'isha'];
+  function fillForm(c) {
+    document.getElementById('s_h24').value = String(c.h24);
+    document.getElementById('s_fa').value = c.fa;
+    document.getElementById('s_ia').value = c.ia;
+    document.getElementById('s_cid').value = c.cid || cfg.cid || '';
+    ids.forEach(function (k) { document.getElementById('o_' + k).value = c.off[k]; });
+  }
+  document.getElementById('setBtn').addEventListener('click', function () { fillForm(cfg); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
+  document.getElementById('cancelBtn').addEventListener('click', function () { dlg.close(); });
+  document.getElementById('resetBtn').addEventListener('click', function () { fillForm(DEFAULTS); });
+  document.getElementById('saveBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    var num = function (id, d) { var v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : d; };
+    cfg.h24 = +document.getElementById('s_h24').value === 12 ? 12 : 24;
+    cfg.fa = num('s_fa', 18); cfg.ia = num('s_ia', 18);
+    cfg.cid = document.getElementById('s_cid').value.trim();
+    ids.forEach(function (k) { cfg.off[k] = num('o_' + k, 0); });
+    save(LS_CFG, cfg); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
+  });
+
+  // ---- Google Calendar (primary calendar, read + add) ----
+  var LS_TOK = 'male-clock-gtok';
+  var tok = load(LS_TOK, null);
+  var calEl = document.getElementById('calList'), calHint = document.getElementById('calHint'), calBtn = document.getElementById('calBtn');
+  function valid() { return tok && tok.exp > Date.now(); }
+  function api(path, opt) {
+    opt = opt || {};
+    opt.headers = { 'Authorization': 'Bearer ' + tok.t, 'Content-Type': 'application/json' };
+    return fetch('https://www.googleapis.com/calendar/v3/' + path, opt).then(function (r) {
+      if (r.status === 401) { tok = null; save(LS_TOK, null); throw new Error('expired'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  function renderEvents(items) {
+    calEl.innerHTML = '';
+    var tf = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hour: 'numeric', minute: '2-digit', hour12: cfg.h24 === 12 });
+    var df = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, weekday: 'short', day: 'numeric', month: 'short' });
+    items.forEach(function (e) {
+      var allDay = !!e.start.date, d = new Date(allDay ? e.start.date + 'T12:00:00+05:00' : e.start.dateTime);
+      var li = document.createElement('li'); li.className = 'ev';
+      var w = document.createElement('span'); w.className = 'w'; w.textContent = df.format(d) + ' · ' + (allDay ? 'All day' : tf.format(d));
+      var t = document.createElement('span'); t.className = 't'; t.textContent = e.summary || '(no title)';
+      li.appendChild(w); li.appendChild(t); calEl.appendChild(li);
+    });
+    calHint.textContent = items.length ? '' : 'No upcoming events.';
+  }
+  function loadEvents() {
+    if (!valid()) {
+      calBtn.textContent = 'Connect Google';
+      calHint.textContent = !cfg.cid ? 'Add your Google Client ID in Settings, then tap Connect Google.' : (tok ? 'Session expired. Tap Connect Google.' : 'Not connected.');
+      return;
+    }
+    calBtn.textContent = 'Refresh';
+    var n = now(), min = new Date(Date.UTC(n.y, n.m - 1, n.d) - TZ * 3600000).toISOString();
+    api('calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=15&timeMin=' + encodeURIComponent(min))
+      .then(function (r) { renderEvents(r.items || []); })
+      .catch(function (e) { calHint.textContent = 'Could not load events (' + e.message + ').'; if (!valid()) calBtn.textContent = 'Connect Google'; });
+  }
+  function connect() {
+    if (!cfg.cid) { calHint.textContent = 'Add your Google Client ID in Settings first.'; return; }
+    function go() {
+      google.accounts.oauth2.initTokenClient({
+        client_id: cfg.cid,
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+        callback: function (r) {
+          if (r.error) { calHint.textContent = 'Sign-in failed: ' + r.error; return; }
+          tok = { t: r.access_token, exp: Date.now() + (r.expires_in - 60) * 1000 }; save(LS_TOK, tok); loadEvents();
+        }
+      }).requestAccessToken({});
+    }
+    if (window.google && google.accounts && google.accounts.oauth2) return go();
+    var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = go; s.onerror = function () { calHint.textContent = 'Could not reach Google (offline?).'; };
+    document.head.appendChild(s);
+  }
+  calBtn.addEventListener('click', function () { if (valid()) loadEvents(); else connect(); });
+  document.getElementById('calForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ti = document.getElementById('evTitle'), wh = document.getElementById('evWhen');
+    if (!ti.value.trim() || !wh.value) { calHint.textContent = 'Enter a title and a start time.'; return; }
+    if (!valid()) { calHint.textContent = 'Connect Google first.'; return; }
+    var s = new Date(wh.value + ':00+05:00');
+    api('calendars/primary/events', { method: 'POST', body: JSON.stringify({ summary: ti.value.trim(), start: { dateTime: s.toISOString() }, end: { dateTime: new Date(+s + 3600000).toISOString() } }) })
+      .then(function () { ti.value = ''; wh.value = ''; loadEvents(); })
+      .catch(function (err) { calHint.textContent = 'Could not add event (' + err.message + ').'; });
+  });
+  loadEvents(); setInterval(function () { if (valid()) loadEvents(); }, 300000);
+
+  // ---- Full screen + keep awake ----
+  document.getElementById('fsBtn').addEventListener('click', function () {
+    try { var p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {}
+  });
+
+  renderTasks(); tick(); setInterval(tick, 1000);
+})();
+</script>
+
+</body></html>

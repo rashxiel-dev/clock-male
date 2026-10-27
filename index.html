@@ -49,8 +49,8 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr);
-  grid-template-areas: "clock clock" "prayers prayers" "tasks sched";
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas: "clock clock" "wx wx" "prayers prayers" "tasks sched";
   gap: clamp(12px, 2.4vw, 26px) clamp(16px, 3vw, 36px);
 }
 .clock { grid-area: clock; min-width: 0; position: relative; }
@@ -156,7 +156,7 @@ body.hasbg .clock{width:fit-content;max-width:100%;padding-right:118px}
 body.hasbg .clock,body.hasbg .prayers{background:var(--glass2);-webkit-backdrop-filter:none;backdrop-filter:none;text-shadow:var(--halo)}
 body.hasbg .prayers{border-color:transparent}
 body.hasbg .plist li.next{text-shadow:none}
-body.saver .tasks,body.saver .cal,body.saver .sched,body.saver .tabs,body.saver .tools{display:none}
+body.saver .tasks,body.saver .cal,body.saver .sched,body.saver .wx,body.saver .tabs,body.saver .tools{display:none}
 body.saver .wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"clock" "prayers"}
 body.saver .clock{align-self:end;padding-right:14px}
 body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
@@ -188,7 +188,7 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
 .sched-foot{font-size:.78em;color:var(--muted);margin:0;white-space:pre-line;max-height:5.5em;overflow-y:auto}
 @media (max-width: 640px) {
   html, body { height: auto; }
-  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "prayers" "tasks" "sched"; }
+  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "clock" "wx" "prayers" "tasks" "sched"; }
   .time { font-size: clamp(64px, 24vw, 130px); }
   .list { max-height: 50vh; }
   .clock .tools { position: static; flex-direction: row; margin-top: 6px; }
@@ -198,10 +198,36 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
 @media (prefers-reduced-motion: no-preference) {
   .plist li { transition: background-color .3s; }
 }
+.tabs{top:0;bottom:0;left:0;right:auto;width:76px;flex-direction:column;justify-content:flex-start;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 6px 10px}
+.tabs button{flex:none;max-width:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 2px;font-size:.72em;border-radius:10px}
+.tabs button i{font-style:normal;font-size:2em;line-height:1}
+body{padding-left:calc(clamp(10px,2.2vw,22px) + 78px);padding-bottom:clamp(10px,2.2vw,22px)}
+body.saver{padding-left:clamp(10px,2.2vw,22px)}
+.ringw{display:inline-block;vertical-align:middle;margin-left:8px;line-height:0}
+@media (max-width:640px){
+  .tabs{top:auto;right:0;width:auto;flex-direction:row;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px))}
+  .tabs button{flex:1;flex-direction:row;justify-content:center;gap:6px;font-size:.85em}
+  .tabs button i{font-size:1.2em}
+  body{padding-left:clamp(10px,2.2vw,22px);padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
+}
+.wx{grid-area:wx;display:flex;gap:12px;align-items:center;min-width:0;overflow:hidden}
+.wx p{margin:0;font-size:.85em;color:var(--muted);flex:0 1 30%}
+#wxHours{display:flex;gap:4px;flex:1;justify-content:space-between}
+.wh{text-align:center;font-size:.72em;line-height:1.3;min-width:0}.wh b{font-weight:500;color:var(--muted);display:block}.wh i{font-style:normal;display:block;font-size:1.3em}.wh u{text-decoration:none;color:var(--accent)}
+body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text-shadow:var(--halo)}
+.nextup{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:var(--accent);color:var(--on-accent)}
+.nextup.idle{background:var(--surface);color:var(--muted)}
+.nextup small{display:block;font-size:.65em;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.nextup .nt1{font-size:1.35em;font-weight:600;line-height:1.15}
+.nextup .nt2{font-size:.8em;opacity:.9}
+.nextup .cd{text-align:right;line-height:1;flex:none}.nextup .cd b{font-size:2.2em;font-weight:700}.nextup .cd span{display:block;font-size:.7em}
+#bat{position:fixed;top:calc(3px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-size:.72em;color:var(--muted);z-index:7;padding:1px 8px;border-radius:10px;background:var(--glass)}
+#bat.low{color:#c0392b;font-weight:600}
 </style>
 
 <div id="bg"></div>
 <input type="file" id="photoIn" accept="image/*" multiple hidden>
+<div id="bat" hidden></div>
 <main class="wrap">
   <section class="clock" aria-label="Time and date">
     <div class="time" id="time" aria-live="off">--:--</div>
@@ -227,9 +253,12 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
 
   <section class="sched" aria-label="Thithy daily task">
     <div class="sched-head"><h2>Thithy daily task</h2><button class="ghost" id="schedEdit" type="button">Edit</button></div>
+    <div class="nextup idle" id="nextUp"></div>
     <ul id="schedList"></ul>
     <p class="sched-foot" id="schedFoot"></p>
   </section>
+
+  <section class="wx" aria-label="Weather"><p id="wxTip"></p><div id="wxHours"></div></section>
 
   <section class="prayers" aria-label="Prayer times for Malé">
     <div class="p-head">
@@ -261,7 +290,13 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
   <ul class="list" id="dList"></ul>
   <form class="cal-form" id="eForm"><input type="text" id="eText" placeholder="New event" aria-label="Event title" autocomplete="off"><input type="time" id="eTime" aria-label="Time"><button type="submit">Add</button></form>
 </section>
-<nav class="tabs"><button data-p="dash" class="on" type="button">Dashboard</button><button data-p="todo" type="button">To-Do</button><button data-p="cal" type="button">Calendar</button></nav>
+<section class="page" id="pg-shop" hidden>
+  <h2>Shopping <span id="shopCount" class="hint"></span></h2>
+  <form class="task-form" id="shForm"><input type="text" id="shText" placeholder="Add item" autocomplete="off" aria-label="New item"><button type="submit">Add</button></form>
+  <ul class="list" id="shList"></ul>
+  <div class="flt"><button class="ghost" id="shClear" type="button">Clear done</button></div>
+</section>
+<nav class="tabs"><button data-p="dash" class="on" type="button"><i>&#127968;</i>Today</button><button data-p="todo" type="button"><i>&#9989;</i>To-Do</button><button data-p="cal" type="button"><i>&#128197;</i>Calendar</button><button data-p="shop" type="button"><i>&#128722;</i>Shopping</button></nav>
 
 <dialog id="dlg">
   <form method="dialog" id="setForm">
@@ -282,6 +317,9 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
       <label for="s_code" class="set-wide">Phone add-task code (8+ letters or numbers, same code on your phone page)</label>
       <input id="s_code" class="set-wide" type="text" autocomplete="off" autocapitalize="off">
       <p class="hint set-wide" id="pollStatus"></p>
+      <label for="s_fb" class="set-wide">Sync database URL (Firebase, optional)</label>
+      <input id="s_fb" class="set-wide" type="text" placeholder="https://yourproject-default-rtdb.firebaseio.com" autocomplete="off" autocapitalize="off">
+      <p class="hint set-wide" id="syncStatus"></p>
     </div>
     <div class="set-actions">
       <button type="button" class="ghost" id="chkNow">Check now</button>
@@ -309,7 +347,8 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
   var LS_CFG = 'male-clock-cfg', LS_TASKS = 'male-clock-tasks';
 
   function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
-  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  var onSaved;
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} if (onSaved) onSaved(key, val); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   var cfg = Object.assign(clone(DEFAULTS), load(LS_CFG, {}));
@@ -461,6 +500,7 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     var dash = sorted(tasks.filter(function (t) { return t.daily || t.star || !t.due || t.due <= td; }));
     fill(listEl, 'd', dash);
     hintEl.textContent = dash.length ? '' : 'No tasks today. Add one above.';
+    setRing('taskRing', dash.filter(function (t) { return t.done; }).length, dash.length);
     fill(document.getElementById('pList'), 'p', sorted(tasks.filter(function (t) { return tf === 'all' || (tf === 'done' ? t.done : !t.done); })));
     Array.prototype.forEach.call(document.querySelectorAll('.flt button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-f') === tf ? ' on' : ''); });
   }
@@ -490,6 +530,7 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     document.getElementById('s_ia').value = c.ia;
     document.getElementById('s_ical').value = cfg.ical || ''; document.getElementById('s_code').value = cfg.code || '';
     document.getElementById('pollStatus').textContent = pollTxt || 'Not checked yet.';
+    document.getElementById('s_fb').value = cfg.fb || ''; document.getElementById('syncStatus').textContent = syncTxt || '';
     ids.forEach(function (k) { document.getElementById('o_' + k).value = c.off[k]; });
   }
   document.getElementById('setBtn').addEventListener('click', function () { fillForm(cfg); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
@@ -501,10 +542,11 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     cfg.h24 = +document.getElementById('s_h24').value === 12 ? 12 : 24;
     cfg.fa = num('s_fa', 18); cfg.ia = num('s_ia', 18);
     cfg.ical = document.getElementById('s_ical').value.trim();
+    cfg.fb = document.getElementById('s_fb').value.trim().replace(/\/+$/, '');
     var nc = document.getElementById('s_code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     if (nc.length >= 8 && nc !== cfg.code) { cfg.code = nc; save(LS_SINCE, 0); save(LS_SEEN, []); }
     ids.forEach(function (k) { cfg.off[k] = num('o_' + k, 0); });
-    save(LS_CFG, cfg); loadIcal(); pollRemote(); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
+    save(LS_CFG, cfg); loadIcal(); pollRemote(); syncNow(); lastDay = ''; tick.force = true; el.time.innerHTML = ''; tick(); dlg.close();
   });
 
   var SEED = [
@@ -547,6 +589,8 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     });
     if (nowLi && idx !== lastNow) ul.scrollTop = nowLi.offsetTop - 4;
     lastNow = idx;
+    setNext(blocks, cur);
+    setRing('schedRing', blocks.filter(function (b) { return cur >= b.e; }).length, blocks.length);
     document.getElementById('schedFoot').textContent = notes.join('\n');
   }
   var sd = document.getElementById('schedDlg');
@@ -603,8 +647,9 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
     document.querySelector('.wrap').hidden = p !== 'dash';
     document.getElementById('pg-todo').hidden = p !== 'todo';
     document.getElementById('pg-cal').hidden = p !== 'cal';
+    document.getElementById('pg-shop').hidden = p !== 'shop';
     Array.prototype.forEach.call(tabBtns, function (b) { b.className = b.getAttribute('data-p') === p ? 'on' : ''; });
-    if (p === 'cal') { renderCal(); if (cfg.ical && Date.now() - icsAt > 300000) loadIcal(); } else if (p === 'todo') renderTasks(); else renderSched();
+    if (p === 'cal') { renderCal(); if (cfg.ical && Date.now() - icsAt > 300000) loadIcal(); } else if (p === 'todo') renderTasks(); else if (p === 'shop') renderShop(); else renderSched();
   }
   Array.prototype.forEach.call(tabBtns, function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); go(b.getAttribute('data-p')); }); });
 
@@ -694,7 +739,7 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
   }
   window.onIcs = function (t) {
     if (t && t.indexOf('BEGIN:VCALENDAR') >= 0) {
-      try { icsMap = buildIcs(t); icsAt = Date.now(); save(LS_ICS, t); } catch (e) {}
+      try { icsMap = buildIcs(t); icsAt = Date.now(); save(LS_ICS, t); schedule(); } catch (e) {}
       if (!document.getElementById('pg-cal').hidden) renderCal();
     }
   };
@@ -724,14 +769,140 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
           if (m.event !== 'message' || seen.indexOf(m.id) >= 0) return;
           seen.push(m.id); since = Math.max(since, m.time || 0);
           var o; try { o = JSON.parse(m.message); } catch (e) { o = { text: m.message }; }
-          if (o && o.text && addTask(String(o.text), o.daily, o.due, o.star)) got++;
+          if (o && o.text && (o.shop ? addShop(String(o.text)) : addTask(String(o.text), o.daily, o.due, o.star))) got++;
         });
         save(LS_SINCE, since); save(LS_SEEN, seen.slice(-100));
         var n = now(); pst('Last check ' + pad(n.h) + ':' + pad(n.mi) + ' - ' + got + ' new task(s). Code: ' + cfg.code);
       }).catch(function (e) { pst('Could not reach ntfy.sh (' + (e && e.message ? e.message : e) + ').'); });
   }
-  document.getElementById('chkNow').addEventListener('click', pollRemote);
+  document.getElementById('chkNow').addEventListener('click', function () { pollRemote(); syncNow(); });
   pollRemote(); setInterval(function () { if (!document.hidden) pollRemote(); }, 120000);
+
+  function ring(d, t) {
+    var c = 2 * Math.PI * 14, f = t ? c * d / t : 0;
+    return '<svg viewBox="0 0 36 36" width="36" height="36"><circle cx="18" cy="18" r="14" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + f + ' ' + c + '" transform="rotate(-90 18 18)"/><text x="18" y="21.5" text-anchor="middle" font-size="10" font-weight="600" fill="var(--fg)">' + d + '/' + t + '</text></svg>';
+  }
+  function setRing(id, d, t) { var e = document.getElementById(id); if (e) e.innerHTML = ring(d, t); }
+  [['.tasks h2', 'taskRing'], ['.sched-head h2', 'schedRing']].forEach(function (a) {
+    var h = document.querySelector(a[0]); if (!h) return;
+    var sp = document.createElement('span'); sp.id = a[1]; sp.className = 'ringw'; h.appendChild(sp);
+  });
+  function setNext(blocks, cur) {
+    var el = document.getElementById('nextUp'), nw = null, nx = null;
+    blocks.forEach(function (b) { if (cur >= b.s && cur < b.e) nw = b; else if (b.s > cur && (!nx || b.s < nx.s)) nx = b; });
+    var b = nw || nx;
+    if (!b) { el.className = 'nextup idle'; el.textContent = 'Nothing more scheduled today'; return; }
+    var m = (nw ? b.e : b.s) - cur;
+    el.className = 'nextup';
+    el.innerHTML = '<div><small></small><div class="nt1"></div><div class="nt2"></div></div><div class="cd"><b></b><span></span></div>';
+    var q = function (c) { return el.querySelector(c); };
+    q('small').textContent = nw ? 'Now' : 'Next up';
+    q('.nt1').textContent = b.t;
+    q('.nt2').textContent = clockStr(b.s / 60) + ' \u2013 ' + clockStr(b.e / 60);
+    q('b').textContent = m >= 60 ? Math.floor(m / 60) + 'h ' + pad(m % 60) : '' + m;
+    q('span').textContent = (m >= 60 ? '' : 'MIN') + (nw ? ' LEFT' : '');
+  }
+
+  // ---- Shopping list ----
+  var LS_SHOP = 'male-clock-shop', shop = load(LS_SHOP, []); if (!Array.isArray(shop)) shop = [];
+  function renderShop() {
+    var ul = document.getElementById('shList'); ul.innerHTML = '';
+    shop.slice().sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); }).forEach(function (it) {
+      var li = document.createElement('li'); if (it.done) li.className = 'done';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = it.done; cb.id = 'sh' + it.id;
+      cb.addEventListener('change', function () { it.done = cb.checked; save(LS_SHOP, shop); renderShop(); });
+      var lb = document.createElement('label'); lb.htmlFor = cb.id; lb.textContent = it.text;
+      li.appendChild(cb); li.appendChild(lb);
+      li.appendChild(mkBtn('\u00D7', 'Delete item', function () { shop = shop.filter(function (x) { return x !== it; }); save(LS_SHOP, shop); renderShop(); }));
+      ul.appendChild(li);
+    });
+    document.getElementById('shopCount').textContent = shop.filter(function (x) { return !x.done; }).length + ' to get';
+  }
+  function addShop(t) { t = t.trim(); if (!t) return false; shop.push({ id: Date.now() + '_' + shop.length, text: t, done: false }); save(LS_SHOP, shop); renderShop(); return true; }
+  document.getElementById('shForm').addEventListener('submit', function (e) { e.preventDefault(); var i = document.getElementById('shText'); if (addShop(i.value)) i.value = ''; });
+  document.getElementById('shClear').addEventListener('click', function () { shop = shop.filter(function (x) { return !x.done; }); save(LS_SHOP, shop); renderShop(); });
+
+  // ---- Battery (the app sends it; Chrome can read it directly) ----
+  window.onBat = function (l, c) {
+    var e = document.getElementById('bat');
+    if (l < 0) { e.hidden = true; return; }
+    e.hidden = false; e.textContent = (c ? '\u26A1 ' : '\uD83D\uDD0B ') + l + '%'; e.className = (!c && l <= 20) ? 'low' : '';
+  };
+  if (navigator.getBattery) navigator.getBattery().then(function (b) {
+    function u() { window.onBat(Math.round(b.level * 100), b.charging ? 1 : 0); }
+    b.addEventListener('levelchange', u); b.addEventListener('chargingchange', u); u();
+  });
+
+  // ---- Sync between the iPad app and the website (Firebase Realtime Database, optional) ----
+  var LS_TOMB = 'male-clock-tomb', LS_SCHU = 'male-clock-schedu';
+  var tomb = load(LS_TOMB, {}), schedU = load(LS_SCHU, 0), snap = {}, syncing = false, syncT, syncTxt = '', syncReady = false;
+  ['tasks', 'shop', 'events'].forEach(function (c) { if (!tomb[c]) tomb[c] = {}; });
+  function colKey(c) { return c === 'tasks' ? LS_TASKS : c === 'shop' ? LS_SHOP : LS_EV; }
+  function colGet(c) { return c === 'tasks' ? tasks : c === 'shop' ? shop : events; }
+  function colSet(c, a) { if (c === 'tasks') tasks = a; else if (c === 'shop') shop = a; else events = a; }
+  function plain(it) { return JSON.stringify(it, function (k, v) { return k === 'u' ? undefined : v; }); }
+  function takeSnap(c) { var o = {}; colGet(c).forEach(function (it) { o[String(it.id)] = plain(it); }); snap[c] = o; }
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+    return JSON.stringify(v);
+  }
+  function norm(a) { return (a || []).slice().sort(function (x, y) { return String(x.id) < String(y.id) ? -1 : 1; }); }
+  function schedule() { clearTimeout(syncT); syncT = setTimeout(syncNow, 3000); }
+  function sst(x) { syncTxt = x; var e = document.getElementById('syncStatus'); if (e) e.textContent = x; }
+  ['tasks', 'shop', 'events'].forEach(takeSnap);
+  syncReady = true;
+  onSaved = function (k, v) {
+    if (!syncReady) return;
+    if (k === LS_SCH) { schedU = Date.now(); try { localStorage.setItem(LS_SCHU, JSON.stringify(schedU)); } catch (e) {} schedule(); return; }
+    var c = k === LS_TASKS ? 'tasks' : k === LS_SHOP ? 'shop' : k === LS_EV ? 'events' : '';
+    if (!c) return;
+    var now_ = Date.now(), cur = {};
+    v.forEach(function (it) { var id = String(it.id), j = plain(it); if (snap[c][id] !== j) it.u = now_; cur[id] = j; });
+    Object.keys(snap[c]).forEach(function (id) { if (!(id in cur)) tomb[c][id] = now_; });
+    snap[c] = cur;
+    try { localStorage.setItem(k, JSON.stringify(v)); localStorage.setItem(LS_TOMB, JSON.stringify(tomb)); } catch (e) {}
+    schedule();
+  };
+  function mergeCol(c, loc, rem, rt) {
+    var t = tomb[c], m = {}, cut = Date.now() - 45 * 864e5;
+    Object.keys(rt || {}).forEach(function (id) { if (!(t[id] >= rt[id])) t[id] = rt[id]; });
+    Object.keys(t).forEach(function (id) { if (t[id] < cut) delete t[id]; });
+    (rem || []).concat(loc).forEach(function (it) { var id = String(it.id), o = m[id]; if (!o || (it.u || 0) > (o.u || 0)) m[id] = it; });
+    return norm(Object.keys(m).map(function (id) { return m[id]; }).filter(function (it) { var id = String(it.id); return !(id in t && t[id] >= (it.u || 0)); }));
+  }
+  function syncNow() {
+    if (!cfg.fb || !cfg.code || syncing) return;
+    syncing = true;
+    var url = cfg.fb.replace(/\/+$/, '') + '/rooms/' + cfg.code + '.json';
+    fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (rem) {
+        rem = rem || {}; var rt = rem.tomb || {}, doc = { tomb: tomb }, push = false, redraw = false;
+        ['tasks', 'shop', 'events'].forEach(function (c) {
+          var merged = mergeCol(c, colGet(c), rem[c], rt[c]);
+          if (canon(merged) !== canon(norm(colGet(c)))) { colSet(c, merged); takeSnap(c); try { localStorage.setItem(colKey(c), JSON.stringify(merged)); } catch (e) {} redraw = true; }
+          doc[c] = merged; if (canon(merged) !== canon(norm(rem[c]))) push = true;
+        });
+        if (canon(tomb) !== canon({ tasks: rt.tasks || {}, shop: rt.shop || {}, events: rt.events || {} })) push = true;
+        try { localStorage.setItem(LS_TOMB, JSON.stringify(tomb)); } catch (e) {}
+        var rs = rem.sched || { v: '', u: 0 };
+        if (rs.u > schedU) { schedTxt = rs.v; schedU = rs.u; try { localStorage.setItem(LS_SCH, JSON.stringify(schedTxt)); localStorage.setItem(LS_SCHU, JSON.stringify(schedU)); } catch (e) {} lastNow = -2; redraw = true; doc.sched = rs; }
+        else { doc.sched = { v: schedTxt, u: schedU }; if (schedU > (rs.u || 0)) push = true; }
+        var rc = rem.cal || { u: 0 };
+        if (rc.u > icsAt && rc.map) { icsMap = rc.map; icsAt = rc.u; redraw = true; doc.cal = rc; }
+        else if (icsAt > 0) { doc.cal = { u: icsAt, map: icsMap }; if (icsAt > (rc.u || 0)) push = true; }
+        else if (rem.cal) doc.cal = rem.cal;
+        if (redraw) { renderTasks(); renderShop(); renderSched(); if (!document.getElementById('pg-cal').hidden) renderCal(); }
+        if (!push) return 'ok';
+        doc.at = Date.now();
+        return fetch(url, { method: 'PUT', body: JSON.stringify(doc) }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return 'ok'; });
+      })
+      .then(function () { var n = now(); sst('Synced at ' + pad(n.h) + ':' + pad(n.mi) + '.'); })
+      .catch(function (e) { sst('Sync failed (' + (e && e.message ? e.message : e) + ').'); })
+      .then(function () { syncing = false; });
+  }
+  setTimeout(syncNow, 2000); setInterval(function () { if (!document.hidden) syncNow(); }, 120000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) syncNow(); });
 
   function todayKey() { var n = now(); return n.y + '-' + n.m + '-' + n.d; }
   function resetDaily() {
@@ -743,9 +914,20 @@ body{padding-bottom:calc(clamp(10px,2.2vw,22px) + 52px)}
   // ---- Weather (Open-Meteo, no key) ----
   var WX = { 0: '\u2600\uFE0F', 1: '\uD83C\uDF24\uFE0F', 2: '\u26C5', 3: '\u2601\uFE0F', 45: '\uD83C\uDF2B\uFE0F', 48: '\uD83C\uDF2B\uFE0F', 51: '\uD83C\uDF26\uFE0F', 53: '\uD83C\uDF26\uFE0F', 55: '\uD83C\uDF26\uFE0F', 61: '\uD83C\uDF27\uFE0F', 63: '\uD83C\uDF27\uFE0F', 65: '\uD83C\uDF27\uFE0F', 80: '\uD83C\uDF26\uFE0F', 81: '\uD83C\uDF27\uFE0F', 82: '\uD83C\uDF27\uFE0F', 95: '\u26C8\uFE0F', 96: '\u26C8\uFE0F', 99: '\u26C8\uFE0F' };
   function weather() {
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LNG + '&current=temperature_2m,weather_code')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LNG + '&current=temperature_2m,weather_code&hourly=temperature_2m,precipitation_probability,weather_code&timezone=auto&forecast_days=2')
       .then(function (r) { return r.json(); })
-      .then(function (j) { document.getElementById('wx').textContent = (WX[j.current.weather_code] || '') + ' ' + Math.round(j.current.temperature_2m) + '\u00B0C'; })
+      .then(function (j) {
+        document.getElementById('wx').textContent = (WX[j.current.weather_code] || '') + ' ' + Math.round(j.current.temperature_2m) + '\u00B0C';
+        var h = j.hourly, n = now(), i = h.time.indexOf(n.y + '-' + pad(n.m) + '-' + pad(n.d) + 'T' + pad(n.h) + ':00'), box = document.getElementById('wxHours'), html = '', rain = -1, k, hr;
+        if (i < 0) i = 0;
+        for (k = 1; k <= 12 && i + k < h.time.length; k++) {
+          var p = h.precipitation_probability[i + k], c = h.weather_code[i + k];
+          if (rain < 0 && (p >= 50 || c >= 51)) rain = +h.time[i + k].slice(11, 13);
+          if (k <= 8) html += '<div class="wh"><b>' + clockStr(+h.time[i + k].slice(11, 13)) + '</b><i>' + (WX[c] || '') + '</i>' + Math.round(h.temperature_2m[i + k]) + '\u00B0' + (p >= 30 ? '<br><u>' + p + '%</u>' : '') + '</div>';
+        }
+        box.innerHTML = html;
+        document.getElementById('wxTip').textContent = j.current.weather_code >= 51 ? 'Raining now. Take an umbrella.' : (rain >= 0 ? 'Rain likely from ' + clockStr(rain) + '. Take an umbrella.' : 'No rain expected in the next 12 hours.');
+      })
       .catch(function () {});
   }
   weather(); setInterval(weather, 1800000);

@@ -26,7 +26,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) { updateAwake() }
 }
 
-class WebViewController: UIViewController, WKScriptMessageHandler {
+class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate {
     var web: WKWebView!
     var dimmed = false
     var savedBrightness: CGFloat = 0.5
@@ -43,10 +43,24 @@ class WebViewController: UIViewController, WKScriptMessageHandler {
         web = WKWebView(frame: view.bounds, configuration: config)
         web.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         web.scrollView.bounces = false
+        web.navigationDelegate = self
         view.addSubview(web)
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        NotificationCenter.default.addObserver(self, selector: #selector(sendBattery), name: UIDevice.batteryLevelDidChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sendBattery), name: UIDevice.batteryStateDidChangeNotification, object: nil)
+        Timer.scheduledTimer(timeInterval: 120, target: self, selector: #selector(sendBattery), userInfo: nil, repeats: true)
         if let page = Bundle.main.url(forResource: "index", withExtension: "html") {
             web.loadFileURL(page, allowingReadAccessTo: page.deletingLastPathComponent())
         }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { sendBattery() }
+
+    @objc func sendBattery() {
+        let d = UIDevice.current
+        let level = d.batteryLevel < 0 ? -1 : Int((d.batteryLevel * 100).rounded())
+        let charging = (d.batteryState == .charging || d.batteryState == .full) ? 1 : 0
+        web.evaluateJavaScript("window.onBat && window.onBat(\(level), \(charging))", completionHandler: nil)
     }
 
     // The page asks to dim the screen when idle and restore it on touch.

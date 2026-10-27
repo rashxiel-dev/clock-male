@@ -21,6 +21,7 @@ details{margin-top:18px;color:#6c68a0}
   <input id="d" type="date" aria-label="Due date (optional)">
   <label><input id="s" type="checkbox"> &#9733; Starred</label>
   <label><input id="y" type="checkbox"> Repeats daily</label>
+  <label><input id="p" type="checkbox"> Shopping item instead of a task</label>
   <button type="submit">Send to iPad</button>
 </form>
 <p id="m" role="status"></p>
@@ -37,8 +38,8 @@ $('f').addEventListener('submit',function(e){
   e.preventDefault(); code=$('k').value.trim().toLowerCase();
   if(!code){$('c').open=true;$('m').textContent='Enter the code first.';return;}
   try{localStorage.setItem(K,code)}catch(x){}
-  fetch('https://ntfy.sh/mcl-'+code,{method:'POST',body:JSON.stringify({text:$('t').value.trim(),due:$('d').value,star:$('s').checked,daily:$('y').checked})})
-   .then(function(r){if(!r.ok)throw 0;$('m').textContent='Sent. It shows on the iPad within a couple of minutes.';$('t').value='';$('d').value='';$('s').checked=false;$('y').checked=false;})
+  fetch('https://ntfy.sh/mcl-'+code,{method:'POST',body:JSON.stringify({text:$('t').value.trim(),due:$('d').value,star:$('s').checked,daily:$('y').checked,shop:$('p').checked})})
+   .then(function(r){if(!r.ok)throw 0;$('m').textContent='Sent. It shows on the iPad within a couple of minutes.';$('t').value='';$('d').value='';$('s').checked=false;$('y').checked=false;$('p').checked=false;})
    .catch(function(){$('m').textContent='Could not send. Check your internet and the code.';});
 });
 </script></body></html>

@@ -892,6 +892,8 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
         if (rc.u > icsAt && rc.map) { icsMap = rc.map; icsAt = rc.u; redraw = true; doc.cal = rc; }
         else if (icsAt > 0) { doc.cal = { u: icsAt, map: icsMap }; if (icsAt > (rc.u || 0)) push = true; }
         else if (rem.cal) doc.cal = rem.cal;
+        var pr = { d: todayISO(), t: ROWS.map(function (r) { var m = Math.round(times[r[0]] * 60); return [r[1], pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60)]; }) };
+        doc.pr = pr; if (canon(pr) !== canon(rem.pr)) push = true;
         if (redraw) { renderTasks(); renderShop(); renderSched(); if (!document.getElementById('pg-cal').hidden) renderCal(); }
         if (!push) return 'ok';
         doc.at = Date.now();

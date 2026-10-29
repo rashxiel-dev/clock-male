@@ -84,7 +84,11 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
               android:minWidth="250dp"
-              android:minHeight="110dp"
+              android:minHeight="250dp"
+              android:minResizeWidth="180dp"
+              android:minResizeHeight="120dp"
+              android:targetCellWidth="4"
+              android:targetCellHeight="4"
               android:updatePeriodMillis="1800000"
               android:initialLayout="@layout/widget"
               android:resizeMode="horizontal|vertical"
@@ -98,6 +102,14 @@ jobs:
               <corners android:radius="18dp" />
           </shape>
           EOF_FILE
+          mkdir -p androidapp/app/src/main/res/drawable
+          cat > androidapp/app/src/main/res/drawable/bg_card.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#FFB9B2FF" />
+              <corners android:radius="14dp" />
+          </shape>
+          EOF_FILE
           mkdir -p androidapp/app/src/main/res/layout
           cat > androidapp/app/src/main/res/layout/widget.xml <<'EOF_FILE'
           <?xml version="1.0" encoding="utf-8"?>
@@ -106,14 +118,38 @@ jobs:
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
-              android:padding="14dp"
+              android:padding="12dp"
               android:background="@drawable/bg">
-              <TextView android:id="@+id/w_next" android:layout_width="match_parent" android:layout_height="wrap_content"
-                  android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" android:maxLines="2" />
+              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:orientation="horizontal" android:gravity="center_vertical"
+                  android:padding="10dp" android:background="@drawable/bg_card">
+                  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                      android:layout_weight="1" android:orientation="vertical">
+                      <TextView android:id="@+id/w_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="10sp" />
+                      <TextView android:id="@+id/w_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:textColor="#14153A" android:textSize="18sp" android:textStyle="bold" android:maxLines="2" />
+                      <TextView android:id="@+id/w_range" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="12sp" />
+                  </LinearLayout>
+                  <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:orientation="vertical" android:gravity="end">
+                      <Chronometer android:id="@+id/w_cd" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#14153A" android:textSize="24sp" android:textStyle="bold" />
+                      <TextView android:id="@+id/w_cdl" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="10sp" />
+                  </LinearLayout>
+              </LinearLayout>
               <TextView android:id="@+id/w_pray" android:layout_width="match_parent" android:layout_height="wrap_content"
-                  android:textColor="#C9C5FF" android:textSize="13sp" android:layout_marginTop="2dp" />
-              <TextView android:id="@+id/w_tasks" android:layout_width="match_parent" android:layout_height="0dp"
-                  android:layout_weight="1" android:textColor="#FFFFFF" android:textSize="13sp" android:layout_marginTop="8dp" />
+                  android:textColor="#C9C5FF" android:textSize="13sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_th" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#9A97C9" android:textSize="10sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_tasks" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#FFFFFF" android:textSize="13sp" />
+              <TextView android:id="@+id/w_sh" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#9A97C9" android:textSize="10sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_sched" android:layout_width="match_parent" android:layout_height="0dp"
+                  android:layout_weight="1" android:textColor="#FFFFFF" android:textSize="12sp" />
               <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                   <TextView android:id="@+id/w_upd" android:layout_width="0dp" android:layout_height="wrap_content"
                       android:layout_weight="1" android:textColor="#9A97C9" android:textSize="11sp" />
@@ -183,12 +219,22 @@ jobs:
           cat > androidapp/app/src/main/java/com/local/maleclock/ClockWidget.kt <<'EOF_FILE'
           package com.local.maleclock
 
+          import android.app.AlarmManager
           import android.app.PendingIntent
           import android.appwidget.AppWidgetManager
           import android.appwidget.AppWidgetProvider
           import android.content.Context
           import android.content.Intent
+          import android.graphics.Color
+          import android.graphics.Typeface
           import android.net.Uri
+          import android.os.SystemClock
+          import android.text.SpannableStringBuilder
+          import android.text.Spanned
+          import android.text.style.ForegroundColorSpan
+          import android.text.style.StrikethroughSpan
+          import android.text.style.StyleSpan
+          import android.view.View
           import android.widget.RemoteViews
           import org.json.JSONArray
           import org.json.JSONObject
@@ -198,105 +244,230 @@ jobs:
           import java.util.Locale
           import java.util.TimeZone
 
+          class W(
+              val label: String, val title: String, val range: String,
+              val leftMs: Long, val leftLabel: String, val prayer: String,
+              val tasksHead: String, val tasks: CharSequence,
+              val schedHead: String, val sched: CharSequence,
+              val updated: String, val changeInMs: Long
+          )
+
           class ClockWidget : AppWidgetProvider() {
+
+              private val DIM = Color.parseColor("#7C78B8")
+              private val LIGHT = Color.parseColor("#E9E7FF")
 
               override fun onUpdate(context: Context, mgr: AppWidgetManager, ids: IntArray) {
                   val pending = goAsync()
                   Thread {
-                      val l = try {
+                      val w = try {
                           build(context)
                       } catch (e: Exception) {
-                          listOf("Could not load", e.message ?: "Check the address and code", "", "")
+                          W("", "Could not load", e.message ?: "Check the address and code", -1L, "", "", "", "", "", "", "", -1L)
                       }
-                      for (id in ids) mgr.updateAppWidget(id, makeViews(context, l, ids))
+                      for (id in ids) mgr.updateAppWidget(id, makeViews(context, w, ids))
+                      if (w.changeInMs > 0) {
+                          val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                          am.set(AlarmManager.RTC, System.currentTimeMillis() + w.changeInMs, refreshIntent(context, ids))
+                      }
                       pending.finish()
                   }.start()
               }
 
-              private fun makeViews(ctx: Context, l: List<String>, ids: IntArray): RemoteViews {
+              private fun refreshIntent(ctx: Context, ids: IntArray): PendingIntent {
+                  val r = Intent(ctx, ClockWidget::class.java)
+                  r.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                  r.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                  return PendingIntent.getBroadcast(ctx, 1, r, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+              }
+
+              private fun makeViews(ctx: Context, w: W, ids: IntArray): RemoteViews {
                   val v = RemoteViews(ctx.packageName, R.layout.widget)
-                  v.setTextViewText(R.id.w_next, l[0])
-                  v.setTextViewText(R.id.w_pray, l[1])
-                  v.setTextViewText(R.id.w_tasks, l[2])
-                  v.setTextViewText(R.id.w_upd, l[3])
+                  v.setTextViewText(R.id.w_label, w.label)
+                  v.setTextViewText(R.id.w_title, w.title)
+                  v.setTextViewText(R.id.w_range, w.range)
+                  v.setTextViewText(R.id.w_pray, w.prayer)
+                  v.setTextViewText(R.id.w_th, w.tasksHead)
+                  v.setTextViewText(R.id.w_tasks, w.tasks)
+                  v.setTextViewText(R.id.w_sh, w.schedHead)
+                  v.setTextViewText(R.id.w_sched, w.sched)
+                  v.setTextViewText(R.id.w_upd, w.updated)
+                  v.setTextViewText(R.id.w_cdl, w.leftLabel)
+                  if (w.leftMs >= 0) {
+                      v.setViewVisibility(R.id.w_cd, View.VISIBLE)
+                      v.setChronometerCountDown(R.id.w_cd, true)
+                      v.setChronometer(R.id.w_cd, SystemClock.elapsedRealtime() + w.leftMs, null, true)
+                  } else {
+                      v.setViewVisibility(R.id.w_cd, View.GONE)
+                  }
                   val site = ctx.getSharedPreferences("cfg", Context.MODE_PRIVATE).getString("site", "") ?: ""
                   val target = if (site.isEmpty()) "https://github.com" else site
                   val open = PendingIntent.getActivity(ctx, 0, Intent(Intent.ACTION_VIEW, Uri.parse(target)), PendingIntent.FLAG_IMMUTABLE)
                   v.setOnClickPendingIntent(R.id.root, open)
-                  val r = Intent(ctx, ClockWidget::class.java)
-                  r.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                  r.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-                  val refresh = PendingIntent.getBroadcast(ctx, 1, r, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-                  v.setOnClickPendingIntent(R.id.w_ref, refresh)
+                  v.setOnClickPendingIntent(R.id.w_ref, refreshIntent(ctx, ids))
                   return v
               }
 
-              private fun build(ctx: Context): List<String> {
+              private fun build(ctx: Context): W {
                   val p = ctx.getSharedPreferences("cfg", Context.MODE_PRIVATE)
                   val fb = p.getString("fb", "") ?: ""
                   val code = p.getString("code", "") ?: ""
                   if (fb.isEmpty() || code.isEmpty()) {
-                      return listOf("Open the Male Clock Widget app", "and enter the Firebase address and code.", "", "")
+                      return W("", "Open the Male Clock Widget app", "and enter the Firebase address and code.", -1L, "", "", "", "", "", "", "", -1L)
                   }
                   val c = URL("$fb/rooms/$code.json").openConnection() as HttpURLConnection
                   c.connectTimeout = 10000
                   c.readTimeout = 10000
                   val text = c.inputStream.bufferedReader().use { it.readText() }
-                  if (text.trim() == "null") return listOf("No data yet", "Sync the clock app first.", "", "")
+                  if (text.trim() == "null") return W("", "No data yet", "Sync the clock app first.", -1L, "", "", "", "", "", "", "", -1L)
                   val root = JSONObject(text)
 
                   val cal = Calendar.getInstance(TimeZone.getTimeZone("Indian/Maldives"))
                   val cur = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+                  val curMs = (cur * 60 + cal.get(Calendar.SECOND)) * 1000L
                   val today = String.format(Locale.US, "%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
 
-                  var next = "Nothing more scheduled today"
-                  var bestStart = Int.MAX_VALUE
+                  // schedule blocks
+                  val bs = ArrayList<IntArray>()
+                  val bt = ArrayList<String>()
                   val re = Regex("""^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\|\s*([^|]+?)\s*(?:\|\s*(.*))?$""")
                   val sched = root.optJSONObject("sched")?.optString("v") ?: ""
                   for (line in sched.split("\n")) {
                       val m = re.find(line.trim()) ?: continue
                       val s = m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
                       val e = m.groupValues[3].toInt() * 60 + m.groupValues[4].toInt()
-                      val t = m.groupValues[5]
-                      if (cur >= s && cur < e) {
-                          next = "Now: " + t + " until " + hm(e)
-                          bestStart = -1
-                      } else if (s > cur && bestStart != -1 && s < bestStart) {
-                          bestStart = s
-                          next = "Next: " + t + " at " + hm(s)
+                      bs.add(intArrayOf(s, e))
+                      bt.add(m.groupValues[5])
+                  }
+                  var nowIdx = -1
+                  var nextIdx = -1
+                  for (i in bs.indices) {
+                      if (cur >= bs[i][0] && cur < bs[i][1]) {
+                          nowIdx = i
+                      } else if (bs[i][0] > cur && (nextIdx == -1 || bs[i][0] < bs[nextIdx][0])) {
+                          nextIdx = i
                       }
                   }
+                  val pick = if (nowIdx >= 0) nowIdx else nextIdx
+                  var label = ""
+                  var title = "Nothing more scheduled today"
+                  var range = ""
+                  var leftMs = -1L
+                  var leftLabel = ""
+                  if (pick >= 0) {
+                      label = if (nowIdx >= 0) "NOW" else "NEXT UP"
+                      title = bt[pick]
+                      range = hm(bs[pick][0]) + " - " + hm(bs[pick][1])
+                      leftMs = (if (nowIdx >= 0) bs[pick][1] else bs[pick][0]) * 60000L - curMs
+                      leftLabel = if (nowIdx >= 0) "LEFT" else "TO GO"
+                  }
 
+                  // moments when the widget should refresh itself
+                  val marks = ArrayList<Int>()
+                  for (b in bs) {
+                      marks.add(b[0])
+                      marks.add(b[1])
+                  }
+
+                  // prayer
                   var pray = "Prayer times: open the clock app to refresh"
                   val pr = root.optJSONObject("pr")
                   if (pr != null && pr.optString("d") == today) {
                       pray = "All prayers done for today"
                       val arr = pr.optJSONArray("t")
                       if (arr != null) {
+                          var found = false
                           for (i in 0 until arr.length()) {
                               val pair = arr.getJSONArray(i)
                               val tm = pair.getString(1)
-                              if (tm.substring(0, 2).toInt() * 60 + tm.substring(3, 5).toInt() > cur) {
+                              val mm = tm.substring(0, 2).toInt() * 60 + tm.substring(3, 5).toInt()
+                              marks.add(mm)
+                              if (!found && mm > cur) {
                                   pray = "Next: " + pair.getString(0) + " " + tm
-                                  break
+                                  found = true
                               }
                           }
                       }
                   }
-
-                  val lines = ArrayList<String>()
-                  for (o in items(root.opt("tasks"))) {
-                      if (o.optBoolean("done")) continue
-                      val due = o.optString("due")
-                      val show = o.optBoolean("daily") || o.optBoolean("star") || due.isEmpty() || due <= today
-                      if (!show) continue
-                      lines.add((if (o.optBoolean("star")) "* " else "- ") + o.optString("text"))
+                  var change = -1L
+                  for (mk in marks) {
+                      if (mk > cur) {
+                          val d = mk * 60000L - curMs + 3000L
+                          if (change < 0 || d < change) change = d
+                      }
                   }
-                  val shop = items(root.opt("shop")).count { !it.optBoolean("done") }
-                  var tasks = if (lines.isEmpty()) "No open tasks" else lines.take(4).joinToString("\n")
-                  if (lines.size > 4) tasks += "\n+" + (lines.size - 4) + " more"
-                  if (shop > 0) tasks += "\nShopping: " + shop + " to get"
-                  return listOf(next, pray, tasks, "Updated " + hm(cur))
+
+                  // schedule list
+                  val past = bs.count { it[1] <= cur }
+                  val sb = SpannableStringBuilder()
+                  var first = -1
+                  for (i in bs.indices) {
+                      if (bs[i][1] > cur) {
+                          first = i
+                          break
+                      }
+                  }
+                  if (first < 0) {
+                      addLine(sb, "All done for today", DIM, false, false)
+                  } else {
+                      var shownN = 0
+                      for (i in first until bs.size) {
+                          if (shownN == 7) {
+                              addLine(sb, "+" + (bs.size - i) + " more", DIM, false, false)
+                              break
+                          }
+                          val isNow = i == nowIdx
+                          addLine(sb, hm(bs[i][0]) + "  " + bt[i], if (isNow) Color.WHITE else LIGHT, isNow, false)
+                          shownN++
+                      }
+                  }
+                  trim(sb)
+
+                  // tasks
+                  val shown = ArrayList<JSONObject>()
+                  for (o in items(root.opt("tasks"))) {
+                      val due = o.optString("due")
+                      if (o.optBoolean("daily") || o.optBoolean("star") || due.isEmpty() || due <= today) shown.add(o)
+                  }
+                  shown.sortWith(compareBy<JSONObject>({ it.optBoolean("done") }, { !it.optBoolean("star") }))
+                  val doneN = shown.count { it.optBoolean("done") }
+                  val tsb = SpannableStringBuilder()
+                  if (shown.isEmpty()) addLine(tsb, "No tasks today", DIM, false, false)
+                  var n = 0
+                  for (o in shown) {
+                      if (n == 6) {
+                          addLine(tsb, "+" + (shown.size - 6) + " more", DIM, false, false)
+                          break
+                      }
+                      val d = o.optBoolean("done")
+                      val mark = if (d) "\u2713 " else if (o.optBoolean("star")) "\u2605 " else "\u2022 "
+                      addLine(tsb, mark + o.optString("text"), if (d) DIM else Color.WHITE, false, d)
+                      n++
+                  }
+                  val shopN = items(root.opt("shop")).count { !it.optBoolean("done") }
+                  if (shopN > 0) addLine(tsb, "Shopping: " + shopN + " to get", LIGHT, false, false)
+                  trim(tsb)
+
+                  return W(
+                      label, title, range, leftMs, leftLabel, pray,
+                      "TASKS TODAY  " + doneN + "/" + shown.size, tsb,
+                      "THITHY DAILY TASK  " + past + "/" + bs.size, sb,
+                      "Updated " + hm(cur), change
+                  )
+              }
+
+              private fun addLine(sb: SpannableStringBuilder, text: String, color: Int, bold: Boolean, strike: Boolean) {
+                  val st = sb.length
+                  sb.append(text)
+                  val en = sb.length
+                  sb.setSpan(ForegroundColorSpan(color), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  if (bold) sb.setSpan(StyleSpan(Typeface.BOLD), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  if (strike) sb.setSpan(StrikethroughSpan(), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  sb.append("\n")
+              }
+
+              private fun trim(sb: SpannableStringBuilder) {
+                  if (sb.length > 0) sb.delete(sb.length - 1, sb.length)
               }
 
               private fun items(x: Any?): List<JSONObject> {

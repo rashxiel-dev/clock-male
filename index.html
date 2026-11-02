@@ -223,6 +223,14 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
 .nextup .cd{text-align:right;line-height:1;flex:none}.nextup .cd b{font-size:2.2em;font-weight:700}.nextup .cd span{display:block;font-size:.7em}
 #bat{position:fixed;top:calc(3px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-size:.72em;color:var(--muted);z-index:7;padding:1px 8px;border-radius:10px;background:var(--glass)}
 #bat.low{color:#c0392b;font-weight:600}
+.task-form select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.mgrid button.hol{color:#c0392b;font-weight:700}
+.mgrid button.brk{background:rgba(120,110,220,.2)}
+.mgrid button.sel{background:var(--accent);color:var(--on-accent)}
+#acadToday{color:#c0392b;font-weight:600}
+.pick{display:flex;gap:6px;flex-wrap:wrap}.pick button{padding:4px 14px;font-size:.85em}.pick button.on{background:var(--accent);color:var(--on-accent)}
+.task-form input[type=number]{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:9em}
+#wtChart svg{max-height:270px}.wleg{font-size:.85em;font-weight:600;display:flex;gap:14px}
 </style>
 
 <div id="bg"></div>
@@ -231,7 +239,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
 <main class="wrap">
   <section class="clock" aria-label="Time and date">
     <div class="time" id="time" aria-live="off">--:--</div>
-    <div class="day"><strong id="dayname">&nbsp;</strong><span id="date"></span><span id="hijri"></span><span id="wx"></span></div>
+    <div class="day"><strong id="dayname">&nbsp;</strong><span id="date"></span><span id="hijri"></span><span id="wx"></span><span id="acadToday"></span></div>
     <div class="tools">
       <button class="ghost" id="photoBtn" type="button">Photos</button>
       <button class="ghost" id="saverBtn" type="button">Screensaver</button>
@@ -276,16 +284,17 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     <input type="text" id="pText" placeholder="Add a task" autocomplete="off" aria-label="New task">
     <input type="date" id="pDue" aria-label="Due date">
     <label class="rep"><input type="checkbox" id="pStar"> &#9733;</label>
-    <label class="rep"><input type="checkbox" id="pDaily"> Daily</label>
+    <select id="pRep" aria-label="Repeat"><option value="">No repeat</option><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option></select>
     <button type="submit">Add</button>
   </form>
   <div class="flt"><button class="ghost" data-f="open">Open</button><button class="ghost" data-f="all">All</button><button class="ghost" data-f="done">Done</button></div>
   <ul class="list" id="pList"></ul>
-  <p class="hint">Tasks with a future date appear on the dashboard on their day. Starred and daily tasks always show there.</p>
+  <p class="hint">Tasks with a future date appear on the dashboard on their day. Starred and daily tasks always show there. Weekly repeats on the weekday of the date you pick, monthly on the same day of each month.</p>
 </section>
 <section class="page" id="pg-cal" hidden>
   <div class="cal-head"><button class="ghost" id="mPrev" type="button">&lsaquo;</button><h2 id="mTitle"></h2><button class="ghost" id="mNext" type="button">&rsaquo;</button></div>
   <div class="mgrid" id="mGrid"></div>
+  <label class="rep"><input type="checkbox" id="acadOn" checked> Show school calendar 2027 (Ministry of Education)</label>
   <h2 id="dTitle"></h2>
   <ul class="list" id="dList"></ul>
   <form class="cal-form" id="eForm"><input type="text" id="eText" placeholder="New event" aria-label="Event title" autocomplete="off"><input type="time" id="eTime" aria-label="Time"><button type="submit">Add</button></form>
@@ -296,7 +305,28 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   <ul class="list" id="shList"></ul>
   <div class="flt"><button class="ghost" id="shClear" type="button">Clear done</button></div>
 </section>
-<nav class="tabs"><button data-p="dash" class="on" type="button"><i>&#127968;</i>Today</button><button data-p="todo" type="button"><i>&#9989;</i>To-Do</button><button data-p="cal" type="button"><i>&#128197;</i>Calendar</button><button data-p="shop" type="button"><i>&#128722;</i>Shopping</button></nav>
+<section class="page" id="pg-move" hidden>
+  <h2>Weekly movement plan</h2>
+  <p class="hint">Start with 10&ndash;20 minutes per session.</p>
+  <ul class="list" id="mvList"></ul>
+  <h2>Strength day routine</h2>
+  <p class="hint">Start with one round of:</p>
+  <ul class="list" id="mvRoutine"></ul>
+</section>
+<section class="page" id="pg-wt" hidden>
+  <h2>Weight tracker</h2>
+  <div class="pick" id="wtPick"><button class="ghost" data-w="thithy" type="button">Thithy</button><button class="ghost" data-w="rash" type="button">Rash</button><button class="ghost" data-w="himmi" type="button">Himmi</button><button class="ghost" data-w="all" type="button">All</button></div>
+  <form class="task-form" id="wtForm">
+    <select id="wtWho" aria-label="Who"><option value="thithy">Thithy</option><option value="rash">Rash</option><option value="himmi">Himmi</option></select>
+    <input type="date" id="wtDate" aria-label="Check date">
+    <input type="number" id="wtVal" step="0.1" min="20" max="300" inputmode="decimal" placeholder="Weight (kg)" aria-label="Weight in kg">
+    <button type="submit">Add</button>
+  </form>
+  <div id="wtChart"></div>
+  <p class="hint" id="wtSum"></p>
+  <ul class="list" id="wtList"></ul>
+</section>
+<nav class="tabs"><button data-p="dash" class="on" type="button"><i>&#127968;</i>Today</button><button data-p="todo" type="button"><i>&#9989;</i>To-Do</button><button data-p="cal" type="button"><i>&#128197;</i>Calendar</button><button data-p="shop" type="button"><i>&#128722;</i>Shopping</button><button data-p="move" type="button"><i>&#128694;</i>Move</button><button data-p="wt" type="button"><i>&#9878;</i>Weight</button></nav>
 
 <dialog id="dlg">
   <form method="dialog" id="setForm">
@@ -333,7 +363,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
 <dialog id="schedDlg" style="max-width:min(94vw,640px);width:94vw">
   <form method="dialog">
     <h3>Thithy daily task</h3>
-    <p class="hint">One block per line: 07:12-13:00 | Title | note. Any other line shows at the bottom.</p>
+    <p class="hint">One block per line: 07:12-13:00 | Title | note. Put a line like [Thu Sat] above the blocks to use them only on those days. Any other line shows at the bottom.</p>
     <textarea id="schedTxt" rows="14" style="width:100%;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea>
     <div class="set-actions"><button type="button" class="ghost" id="schedCancel">Cancel</button><button type="button" id="schedSave">Save</button></div>
   </form>
@@ -488,7 +518,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = p + t.id;
       cb.addEventListener('change', function () { t.done = cb.checked; t.doneDay = todayKey(); save(LS_TASKS, tasks); renderTasks(); });
       var lb = document.createElement('label'); lb.htmlFor = cb.id;
-      lb.textContent = (t.daily ? '\u21BB ' : '') + t.text + (t.due ? '  \u00B7 ' + t.due.slice(5) : '');
+      lb.textContent = (t.daily ? '\u21BB ' : (t.rep === 'w' ? '\u21BB wk ' : (t.rep === 'm' ? '\u21BB mo ' : ''))) + t.text + (t.due ? '  \u00B7 ' + t.due.slice(5) : '');
       li.appendChild(cb); li.appendChild(lb);
       li.appendChild(mkBtn(t.star ? '\u2605' : '\u2606', 'Star', function () { t.star = !t.star; save(LS_TASKS, tasks); renderTasks(); }));
       li.appendChild(mkBtn('\u00D7', 'Delete task', function () { tasks = tasks.filter(function (x) { return x !== t; }); save(LS_TASKS, tasks); renderTasks(); }));
@@ -502,12 +532,23 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     hintEl.textContent = dash.length ? '' : 'No tasks today. Add one above.';
     setRing('taskRing', dash.filter(function (t) { return t.done; }).length, dash.length);
     fill(document.getElementById('pList'), 'p', sorted(tasks.filter(function (t) { return tf === 'all' || (tf === 'done' ? t.done : !t.done); })));
-    Array.prototype.forEach.call(document.querySelectorAll('.flt button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-f') === tf ? ' on' : ''); });
+    Array.prototype.forEach.call(document.querySelectorAll('#pg-todo .flt button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-f') === tf ? ' on' : ''); });
   }
-  function addTask(text, daily, due, star) {
+  function addDays(iso, n) { var p = iso.split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  function dowOf(iso) { var p = iso.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay(); }
+  function nextOcc(t, from, inclusive) {
+    var start = inclusive ? from : addDays(from, 1), i, d, p, dim;
+    if (t.rep === 'w') { for (i = 0; i < 7; i++) { d = addDays(start, i); if (dowOf(d) === t.wd) return d; } }
+    if (t.rep === 'm') { for (i = 0; i < 62; i++) { d = addDays(start, i); p = d.split('-'); dim = new Date(Date.UTC(+p[0], +p[1], 0)).getUTCDate(); if (+p[2] === Math.min(t.md, dim)) return d; } }
+    return start;
+  }
+  function addTask(text, rep, due, star) {
     text = text.trim(); if (!text) return false;
-    tasks.push({ id: Date.now(), text: text, done: false, daily: !!daily, due: due || '', star: !!star });
-    save(LS_TASKS, tasks); renderTasks(); return true;
+    rep = (rep === true || rep === 'd') ? 'd' : (rep === 'w' || rep === 'm' ? rep : '');
+    var t = { id: Date.now(), text: text, done: false, daily: rep === 'd', due: due || '', star: !!star };
+    if (rep) t.rep = rep;
+    if (rep === 'w' || rep === 'm') { var a = t.due || todayISO(); t.wd = dowOf(a); t.md = +a.split('-')[2]; t.due = nextOcc(t, todayISO(), true); }
+    tasks.push(t); save(LS_TASKS, tasks); renderTasks(); return true;
   }
   document.getElementById('taskForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -517,9 +558,9 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   document.getElementById('pForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var f = function (id) { return document.getElementById(id); };
-    if (addTask(f('pText').value, f('pDaily').checked, f('pDue').value, f('pStar').checked)) { f('pText').value = ''; f('pDue').value = ''; f('pDaily').checked = false; f('pStar').checked = false; }
+    if (addTask(f('pText').value, f('pRep').value, f('pDue').value, f('pStar').checked)) { f('pText').value = ''; f('pDue').value = ''; f('pRep').value = ''; f('pStar').checked = false; }
   });
-  Array.prototype.forEach.call(document.querySelectorAll('.flt button'), function (b) { b.addEventListener('click', function () { tf = b.getAttribute('data-f'); renderTasks(); }); });
+  Array.prototype.forEach.call(document.querySelectorAll('#pg-todo .flt button'), function (b) { b.addEventListener('click', function () { tf = b.getAttribute('data-f'); renderTasks(); }); });
 
   // ---- Settings ----
   var dlg = document.getElementById('dlg');
@@ -569,9 +610,12 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   var schedTxt = load(LS_SCH, null); if (typeof schedTxt !== 'string') schedTxt = SEED;
   var lastNow = -2;
   function renderSched() {
-    var n = now(), cur = n.h * 60 + n.mi, blocks = [], notes = [];
+    var n = now(), cur = n.h * 60 + n.mi, blocks = [], notes = [], grp = null, dk = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(Date.UTC(n.y, n.m - 1, n.d)).getUTCDay()];
     schedTxt.split('\n').forEach(function (l) {
       l = l.trim(); if (!l) return;
+      var hd = /^\[(.*)\]$/.exec(l);
+      if (hd) { grp = hd[1].toLowerCase().split(/[\s,]+/).filter(Boolean).map(function (x) { return x.slice(0, 3); }); return; }
+      if (grp && grp.indexOf('all') < 0 && grp.indexOf(dk) < 0) return;
       var m = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\|\s*([^|]+?)\s*(?:\|\s*(.*))?$/.exec(l);
       if (m) blocks.push({ s: +m[1] * 60 + +m[2], e: +m[3] * 60 + +m[4], t: m[5], d: m[6] || '' }); else notes.push(l);
     });
@@ -589,7 +633,8 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     });
     if (nowLi && idx !== lastNow) ul.scrollTop = nowLi.offsetTop - 4;
     lastNow = idx;
-    setNext(blocks, cur);
+    setNext(blocks, cur, notes);
+    acadTodayLine();
     setRing('schedRing', blocks.filter(function (b) { return cur >= b.e; }).length, blocks.length);
     document.getElementById('schedFoot').textContent = notes.join('\n');
   }
@@ -612,8 +657,8 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     for (var i = 0; i < dow; i++) { var pd = document.createElement('button'); pd.className = 'pad'; g.appendChild(pd); }
     for (var d = 1; d <= days; d++) (function (d) {
       var k = iso(cm.y, cm.m, d), b = document.createElement('button'); b.type = 'button'; b.textContent = d;
-      var has = events.some(function (e) { return e.date === k; }) || tasks.some(function (t) { return t.due === k; }) || !!(icsMap[k] && icsMap[k].length);
-      b.className = (k === sel ? 'sel ' : '') + (k === td ? 'today ' : '') + (has ? 'dot' : '');
+      var has = events.some(function (e) { return e.date === k; }) || tasks.some(function (t) { return t.due === k; }) || !!(icsMap[k] && icsMap[k].length) || !!(acadOn() && acad[k] && acad[k].some(function (x) { return x.t === 's' || x.t === 'e'; }));
+      b.className = (k === sel ? 'sel ' : '') + (k === td ? 'today ' : '') + (has ? 'dot ' : '') + acadCls(k);
       b.addEventListener('click', function () { sel = k; renderCal(); });
       g.appendChild(b);
     })(d);
@@ -628,6 +673,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     events.filter(function (e) { return e.date === sel; }).sort(function (x, y) { return String(x.time).localeCompare(String(y.time)); })
       .forEach(function (e) { row(e.time || 'All day', e.text, function () { events = events.filter(function (x) { return x !== e; }); save(LS_EV, events); renderCal(); }); });
     tasks.filter(function (t) { return t.due === sel; }).forEach(function (t) { row('Task', t.text + (t.done ? ' \u2713' : '')); });
+    if (acadOn()) (acad[sel] || []).forEach(function (x) { row(ACL[x.t], x.text); });
     (icsMap[sel] || []).forEach(function (x) { row(x.min < 0 ? 'All day' : clockStr(x.min / 60), x.text); });
     if (!ul.children.length) { var h = document.createElement('li'); h.className = 'hint'; h.textContent = 'Nothing on this day.'; ul.appendChild(h); }
   }
@@ -648,8 +694,10 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     document.getElementById('pg-todo').hidden = p !== 'todo';
     document.getElementById('pg-cal').hidden = p !== 'cal';
     document.getElementById('pg-shop').hidden = p !== 'shop';
+    document.getElementById('pg-move').hidden = p !== 'move';
+    document.getElementById('pg-wt').hidden = p !== 'wt';
     Array.prototype.forEach.call(tabBtns, function (b) { b.className = b.getAttribute('data-p') === p ? 'on' : ''; });
-    if (p === 'cal') { renderCal(); if (cfg.ical && Date.now() - icsAt > 300000) loadIcal(); } else if (p === 'todo') renderTasks(); else if (p === 'shop') renderShop(); else renderSched();
+    if (p === 'cal') { renderCal(); if (cfg.ical && Date.now() - icsAt > 300000) loadIcal(); } else if (p === 'todo') renderTasks(); else if (p === 'shop') renderShop(); else if (p === 'move') renderMove(); else if (p === 'wt') renderWeight(); else renderSched();
   }
   Array.prototype.forEach.call(tabBtns, function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); go(b.getAttribute('data-p')); }); });
 
@@ -769,7 +817,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
           if (m.event !== 'message' || seen.indexOf(m.id) >= 0) return;
           seen.push(m.id); since = Math.max(since, m.time || 0);
           var o; try { o = JSON.parse(m.message); } catch (e) { o = { text: m.message }; }
-          if (o && o.text && (o.shop ? addShop(String(o.text)) : addTask(String(o.text), o.daily, o.due, o.star))) got++;
+          if (o && o.text && (o.shop ? addShop(String(o.text)) : addTask(String(o.text), o.rep || o.daily, o.due, o.star))) got++;
         });
         save(LS_SINCE, since); save(LS_SEEN, seen.slice(-100));
         var n = now(); pst('Last check ' + pad(n.h) + ':' + pad(n.mi) + ' - ' + got + ' new task(s). Code: ' + cfg.code);
@@ -787,10 +835,11 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     var h = document.querySelector(a[0]); if (!h) return;
     var sp = document.createElement('span'); sp.id = a[1]; sp.className = 'ringw'; h.appendChild(sp);
   });
-  function setNext(blocks, cur) {
+  function setNext(blocks, cur, notes) {
     var el = document.getElementById('nextUp'), nw = null, nx = null;
     blocks.forEach(function (b) { if (cur >= b.s && cur < b.e) nw = b; else if (b.s > cur && (!nx || b.s < nx.s)) nx = b; });
     var b = nw || nx;
+    if (!b && !blocks.length && notes.length) { el.className = 'nextup'; el.innerHTML = '<div><small>Today</small><div class="nt1"></div></div>'; el.querySelector('.nt1').textContent = notes[0]; return; }
     if (!b) { el.className = 'nextup idle'; el.textContent = 'Nothing more scheduled today'; return; }
     var m = (nw ? b.e : b.s) - cur;
     el.className = 'nextup';
@@ -833,13 +882,14 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     b.addEventListener('levelchange', u); b.addEventListener('chargingchange', u); u();
   });
 
+  var LS_WT = 'male-clock-weight', wt = load(LS_WT, []); if (!Array.isArray(wt)) wt = [];
   // ---- Sync between the iPad app and the website (Firebase Realtime Database, optional) ----
   var LS_TOMB = 'male-clock-tomb', LS_SCHU = 'male-clock-schedu';
   var tomb = load(LS_TOMB, {}), schedU = load(LS_SCHU, 0), snap = {}, syncing = false, syncT, syncTxt = '', syncReady = false;
-  ['tasks', 'shop', 'events'].forEach(function (c) { if (!tomb[c]) tomb[c] = {}; });
-  function colKey(c) { return c === 'tasks' ? LS_TASKS : c === 'shop' ? LS_SHOP : LS_EV; }
-  function colGet(c) { return c === 'tasks' ? tasks : c === 'shop' ? shop : events; }
-  function colSet(c, a) { if (c === 'tasks') tasks = a; else if (c === 'shop') shop = a; else events = a; }
+  ['tasks', 'shop', 'events', 'weight'].forEach(function (c) { if (!tomb[c]) tomb[c] = {}; });
+  function colKey(c) { return c === 'tasks' ? LS_TASKS : c === 'shop' ? LS_SHOP : c === 'weight' ? LS_WT : LS_EV; }
+  function colGet(c) { return c === 'tasks' ? tasks : c === 'shop' ? shop : c === 'weight' ? wt : events; }
+  function colSet(c, a) { if (c === 'tasks') tasks = a; else if (c === 'shop') shop = a; else if (c === 'weight') wt = a; else events = a; }
   function plain(it) { return JSON.stringify(it, function (k, v) { return k === 'u' ? undefined : v; }); }
   function takeSnap(c) { var o = {}; colGet(c).forEach(function (it) { o[String(it.id)] = plain(it); }); snap[c] = o; }
   function canon(v) {
@@ -850,12 +900,12 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   function norm(a) { return (a || []).slice().sort(function (x, y) { return String(x.id) < String(y.id) ? -1 : 1; }); }
   function schedule() { clearTimeout(syncT); syncT = setTimeout(syncNow, 3000); }
   function sst(x) { syncTxt = x; var e = document.getElementById('syncStatus'); if (e) e.textContent = x; }
-  ['tasks', 'shop', 'events'].forEach(takeSnap);
+  ['tasks', 'shop', 'events', 'weight'].forEach(takeSnap);
   syncReady = true;
   onSaved = function (k, v) {
     if (!syncReady) return;
     if (k === LS_SCH) { schedU = Date.now(); try { localStorage.setItem(LS_SCHU, JSON.stringify(schedU)); } catch (e) {} schedule(); return; }
-    var c = k === LS_TASKS ? 'tasks' : k === LS_SHOP ? 'shop' : k === LS_EV ? 'events' : '';
+    var c = k === LS_TASKS ? 'tasks' : k === LS_SHOP ? 'shop' : k === LS_EV ? 'events' : k === LS_WT ? 'weight' : '';
     if (!c) return;
     var now_ = Date.now(), cur = {};
     v.forEach(function (it) { var id = String(it.id), j = plain(it); if (snap[c][id] !== j) it.u = now_; cur[id] = j; });
@@ -878,12 +928,12 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (rem) {
         rem = rem || {}; var rt = rem.tomb || {}, doc = { tomb: tomb }, push = false, redraw = false;
-        ['tasks', 'shop', 'events'].forEach(function (c) {
+        ['tasks', 'shop', 'events', 'weight'].forEach(function (c) {
           var merged = mergeCol(c, colGet(c), rem[c], rt[c]);
           if (canon(merged) !== canon(norm(colGet(c)))) { colSet(c, merged); takeSnap(c); try { localStorage.setItem(colKey(c), JSON.stringify(merged)); } catch (e) {} redraw = true; }
           doc[c] = merged; if (canon(merged) !== canon(norm(rem[c]))) push = true;
         });
-        if (canon(tomb) !== canon({ tasks: rt.tasks || {}, shop: rt.shop || {}, events: rt.events || {} })) push = true;
+        if (canon(tomb) !== canon({ tasks: rt.tasks || {}, shop: rt.shop || {}, events: rt.events || {}, weight: rt.weight || {} })) push = true;
         try { localStorage.setItem(LS_TOMB, JSON.stringify(tomb)); } catch (e) {}
         var rs = rem.sched || { v: '', u: 0 };
         if (rs.u > schedU) { schedTxt = rs.v; schedU = rs.u; try { localStorage.setItem(LS_SCH, JSON.stringify(schedTxt)); localStorage.setItem(LS_SCHU, JSON.stringify(schedU)); } catch (e) {} lastNow = -2; redraw = true; doc.sched = rs; }
@@ -894,7 +944,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
         else if (rem.cal) doc.cal = rem.cal;
         var pr = { d: todayISO(), t: ROWS.map(function (r) { var m = Math.round(times[r[0]] * 60); return [r[1], pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60)]; }) };
         doc.pr = pr; if (canon(pr) !== canon(rem.pr)) push = true;
-        if (redraw) { renderTasks(); renderShop(); renderSched(); if (!document.getElementById('pg-cal').hidden) renderCal(); }
+        if (redraw) { renderTasks(); renderShop(); renderSched(); renderWeight(); if (!document.getElementById('pg-cal').hidden) renderCal(); }
         if (!push) return 'ok';
         doc.at = Date.now();
         return fetch(url, { method: 'PUT', body: JSON.stringify(doc) }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return 'ok'; });
@@ -906,10 +956,189 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   setTimeout(syncNow, 2000); setInterval(function () { if (!document.hidden) syncNow(); }, 120000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) syncNow(); });
 
+  // ---- Weekly movement plan ----
+  var PLAN = [
+    ['Sunday', '17:00\u201317:20', 'Gentle strength exercises', 1],
+    ['Monday', '17:00\u201317:20', 'Comfortable walking', 0],
+    ['Tuesday', '17:00\u201317:20', 'Gentle strength exercises', 1],
+    ['Wednesday', '17:00\u201317:20', 'Comfortable walking', 0],
+    ['Thursday', '', 'Optional 5\u201310 minutes of gentle mobility', 0],
+    ['Friday', '', 'Everyday walking; no compulsory workout', 0],
+    ['Saturday', '', 'Optional 10\u201315-minute walk or rest before class', 0]
+  ];
+  var ROUT = ['5\u20138 sit-to-stands from a sturdy chair.', '5\u20138 wall push-ups.', '30\u201360 seconds of gentle standing marches.', 'A few minutes of comfortable mobility and breathing.'];
+  var LS_MV = 'male-clock-move', mv = load(LS_MV, {});
+  function renderMove() {
+    var n = now(), dow = new Date(Date.UTC(n.y, n.m - 1, n.d)).getUTCDay(), key = todayISO();
+    var st = mv[key] || { done: false, r: [] };
+    function keep() { var o = {}; o[key] = st; mv = o; save(LS_MV, mv); }
+    var ul = document.getElementById('mvList'); ul.innerHTML = '';
+    PLAN.forEach(function (r, i) {
+      var li = document.createElement('li'); li.className = 'ev';
+      var w = document.createElement('span'); w.className = 'w'; w.style.width = '15em'; w.textContent = r[0] + (r[1] ? '  ' + r[1] : '');
+      var t = document.createElement('span'); t.className = 't'; t.textContent = r[2];
+      li.appendChild(w); li.appendChild(t);
+      if (i === dow) {
+        li.style.background = 'var(--accent)'; li.style.color = 'var(--on-accent)'; li.style.borderRadius = '8px'; w.style.color = 'inherit';
+        var lb = document.createElement('label'), cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = !!st.done; cb.addEventListener('change', function () { st.done = cb.checked; keep(); });
+        lb.appendChild(cb); lb.appendChild(document.createTextNode(' Done today')); li.appendChild(lb);
+      }
+      ul.appendChild(li);
+    });
+    var rl = document.getElementById('mvRoutine'); rl.innerHTML = '';
+    ROUT.forEach(function (x, i) {
+      var li = document.createElement('li'), cb = document.createElement('input'), lb = document.createElement('label');
+      cb.type = 'checkbox'; cb.id = 'mr' + i; cb.checked = !!st.r[i]; cb.addEventListener('change', function () { st.r[i] = cb.checked; keep(); });
+      lb.htmlFor = cb.id; lb.textContent = x; li.appendChild(cb); li.appendChild(lb); rl.appendChild(li);
+    });
+  }
+
+  // ---- School calendar 2027 (Ministry of Education, tentative version 1 Oct 2026) ----
+  var ACAD = [
+    ["2027-01-01", "", "New Year 2027", "h"],
+    ["2027-01-13", "", "Teachers' Reporting Day 2027", "s"],
+    ["2027-01-17", "", "Beginning of Academic Year 2027", "s"],
+    ["2027-01-31", "", "Beginning of AL Batch 2027 (B-27)", "s"],
+    ["2027-02-08", "", "First of Ramadan", "h"],
+    ["2027-02-26", "2027-03-07", "Last 10 days of Ramadan", "h"],
+    ["2027-03-09", "", "Eid-al-Fitr", "h"],
+    ["2027-03-10", "2027-03-11", "On the occasion of Eid-al-Fitr", "h"],
+    ["2027-03-21", "2027-03-25", "Professional Development", "s"],
+    ["2027-04-01", "2027-04-15", "Gr. 11 (B-26) Mock & Gr. 12 Term Exam", "e"],
+    ["2027-04-22", "", "Professional Development", "s"],
+    ["2027-05-01", "", "Labour Day", "h"],
+    ["2027-05-09", "2027-06-10", "School Transfer Period 1", "s", "edge"],
+    ["2027-05-10", "", "Children's Day (half-day of teaching)", "s"],
+    ["2027-05-16", "", "Hajj Day", "h"],
+    ["2027-05-16", "2027-05-22", "First Term Mid-Break", "b"],
+    ["2027-05-17", "", "Eid-al-Adha", "h"],
+    ["2027-05-18", "2027-05-20", "On the occasion of Eid-al-Adha", "h"],
+    ["2027-06-06", "", "Islamic New Year 1449", "h"],
+    ["2027-06-12", "2027-06-14", "Camps and Activities (KS1-KS4)", "s"],
+    ["2027-06-29", "2027-07-10", "First Term Exam", "e"],
+    ["2027-07-04", "2027-08-31", "New Admission - LKG & Gr. 1", "s", "edge"],
+    ["2027-07-15", "", "End of First Term 2027", "s"],
+    ["2027-07-16", "2027-07-31", "First Term Holidays", "b"],
+    ["2027-07-26", "", "Independence Day", "h"],
+    ["2027-07-27", "", "On the occasion of Independence Day", "h"],
+    ["2027-08-01", "", "Beginning of Second Term 2027", "s"],
+    ["2027-08-03", "", "National Day", "h"],
+    ["2027-08-14", "", "Prophet Muhammad's (PBUH) Birthday", "h"],
+    ["2027-08-26", "2027-09-09", "Gr. 10 Mock Exam", "e"],
+    ["2027-08-26", "2027-09-09", "Gr. 11 (B-27) & Gr. 12 Mock Exam", "e"],
+    ["2027-09-03", "", "The Day Maldives Embraced Islam", "h"],
+    ["2027-09-19", "2027-09-25", "Second Term Mid-Break", "b"],
+    ["2027-10-05", "", "Teachers' Day (half-day of teaching)", "s"],
+    ["2027-10-10", "2027-11-09", "School Transfer Period 2", "s", "edge"],
+    ["2027-10-31", "2027-11-10", "National Curriculum Assessment", "e"],
+    ["2027-11-03", "", "Victory Day", "h"],
+    ["2027-11-04", "", "Professional Development", "s"],
+    ["2027-11-11", "", "Republic Day", "h"],
+    ["2027-11-23", "2027-12-04", "Second Term Exam", "e"],
+    ["2027-12-09", "", "End of Second Term 2027", "s"],
+    ["2027-12-10", "2028-01-04", "Second Term Holidays", "b"],
+    ["2028-01-01", "", "New Year 2028", "h"],
+    ["2028-01-05", "", "Teachers' Reporting Day 2028", "s"],
+    ["2028-01-09", "", "Beginning of Academic Year 2028", "s"]
+  ];
+  var ACL = { h: 'Holiday', b: 'Break', e: 'Exam', s: 'School' }, acad = {}, LS_AC = 'male-clock-acad';
+  ACAD.forEach(function (r) {
+    var a = r[0], z = r[1] || r[0], edge = r[4] === 'edge', d = a, g = 0;
+    while (d <= z && g++ < 400) {
+      var txt = r[2];
+      if (edge && a !== z) { if (d === a) txt += ' (starts)'; else if (d === z) txt += ' (ends)'; else { d = addDays(d, 1); continue; } }
+      (acad[d] = acad[d] || []).push({ text: txt, t: r[3] });
+      d = addDays(d, 1);
+    }
+  });
+  function acadOn() { var e = document.getElementById('acadOn'); return !e || e.checked; }
+  function acadCls(k) {
+    if (!acadOn() || !acad[k]) return '';
+    var c = ''; acad[k].forEach(function (x) { if (x.t === 'h') c += ' hol'; else if (x.t === 'b') c += ' brk'; });
+    return c;
+  }
+  function acadTodayLine() {
+    var e = document.getElementById('acadToday'); if (!e) return;
+    var a = (acad[todayISO()] || []).filter(function (x) { return x.t === 'h' || x.t === 'b'; })[0];
+    e.textContent = a ? '\u2022 ' + a.text : '';
+  }
+  document.getElementById('acadOn').checked = load(LS_AC, true) !== false;
+  document.getElementById('acadOn').addEventListener('change', function () { save(LS_AC, this.checked); renderCal(); });
+
+  // ---- Weight tracker (Thithy, Rash, Himmi) ----
+  var WHO = [['thithy', 'Thithy', '#7b6cf6'], ['rash', 'Rash', '#e67e22'], ['himmi', 'Himmi', '#16a085']], wsel = 'thithy';
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function dlab(iso, yr) { var p = iso.split('-'); return +p[2] + ' ' + MON[+p[1] - 1] + (yr ? ' ' + p[0] : ''); }
+  function tms(iso) { var p = iso.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+  function wlist(p) { return wt.filter(function (x) { return x.p === p; }).sort(function (a, b) { return a.d < b.d ? -1 : (a.d > b.d ? 1 : 0); }); }
+  function r1(v) { return Math.round(v * 10) / 10; }
+  function renderWeight() {
+    Array.prototype.forEach.call(document.querySelectorAll('#wtPick button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-w') === wsel ? ' on' : ''); });
+    var dEl = document.getElementById('wtDate'); if (!dEl.value) dEl.value = todayISO();
+    var who = wsel === 'all' ? WHO : WHO.filter(function (r) { return r[0] === wsel; });
+    var all = []; who.forEach(function (r) { all = all.concat(wlist(r[0])); });
+    var box = document.getElementById('wtChart'), sum = document.getElementById('wtSum'), ul = document.getElementById('wtList');
+    ul.innerHTML = '';
+    if (!all.length) { box.innerHTML = '<p class="hint">No weight checks yet. Add the first one above.</p>'; sum.textContent = ''; return; }
+    var W = 600, H = 250, L = 44, R = 16, T = 18, B = 28, i;
+    var xs = all.map(function (x) { return tms(x.d); }), x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var ys = all.map(function (x) { return x.w; }), y0 = Math.floor(Math.min.apply(null, ys) - 1), y1 = Math.ceil(Math.max.apply(null, ys) + 1);
+    y1 = y0 + Math.ceil((y1 - y0) / 4) * 4;
+    function X(t) { return x1 === x0 ? (L + W - R) / 2 : L + (t - x0) / (x1 - x0) * (W - L - R); }
+    function Y(v) { return T + (y1 - v) / (y1 - y0) * (H - T - B); }
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Weight chart">';
+    for (i = 0; i <= 4; i++) {
+      var v = y0 + (y1 - y0) * i / 4, yy = Y(v);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + r1(v) + '</text>';
+    }
+    var d0 = new Date(x0).toISOString().slice(0, 10), d1 = new Date(x1).toISOString().slice(0, 10);
+    svg += '<text x="' + X(x0) + '" y="' + (H - 8) + '" text-anchor="' + (x0 === x1 ? 'middle' : 'start') + '" font-size="11" fill="var(--muted)">' + dlab(d0) + '</text>';
+    if (x1 !== x0) svg += '<text x="' + X(x1) + '" y="' + (H - 8) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + dlab(d1) + '</text>';
+    who.forEach(function (r) {
+      var A = wlist(r[0]); if (!A.length) return;
+      if (A.length > 1) svg += '<polyline points="' + A.map(function (x) { return X(tms(x.d)) + ',' + Y(x.w); }).join(' ') + '" fill="none" stroke="' + r[2] + '" stroke-width="2.5" stroke-linejoin="round"/>';
+      A.forEach(function (x) { svg += '<circle cx="' + X(tms(x.d)) + '" cy="' + Y(x.w) + '" r="4" fill="' + r[2] + '"/>'; });
+      var last = A[A.length - 1];
+      svg += '<text x="' + X(tms(last.d)) + '" y="' + (Y(last.w) - 9) + '" text-anchor="middle" font-size="12" font-weight="600" fill="' + r[2] + '">' + last.w + '</text>';
+    });
+    svg += '</svg>';
+    box.innerHTML = (wsel === 'all' ? '<div class="wleg">' + WHO.map(function (r) { return '<span style="color:' + r[2] + '">\u25CF ' + r[1] + '</span>'; }).join('') + '</div>' : '') + svg;
+    if (wsel === 'all') {
+      sum.textContent = 'Latest: ' + WHO.map(function (r) { var A = wlist(r[0]), l = A[A.length - 1]; return r[1] + ' ' + (l ? l.w + ' kg (' + dlab(l.d) + ')' : 'no checks'); }).join(' \u00B7 ');
+    } else {
+      var A = wlist(wsel), f = A[0], l = A[A.length - 1], df = r1(l.w - f.w);
+      sum.textContent = 'Latest ' + l.w + ' kg (' + dlab(l.d) + ')' + (A.length > 1 ? ' \u00B7 Change ' + (df > 0 ? '+' : '') + df + ' kg since ' + dlab(f.d) : '') + ' \u00B7 ' + A.length + ' check' + (A.length > 1 ? 's' : '');
+      A.slice().reverse().forEach(function (x) {
+        var li = document.createElement('li'), lb = document.createElement('label');
+        lb.textContent = dlab(x.d, true) + '   ' + x.w + ' kg';
+        li.appendChild(lb);
+        li.appendChild(mkBtn('\u00D7', 'Delete check', function () { wt = wt.filter(function (y) { return y !== x; }); save(LS_WT, wt); renderWeight(); }));
+        ul.appendChild(li);
+      });
+    }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#wtPick button'), function (b) {
+    b.addEventListener('click', function () { wsel = b.getAttribute('data-w'); if (wsel !== 'all') document.getElementById('wtWho').value = wsel; renderWeight(); });
+  });
+  document.getElementById('wtForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var who = document.getElementById('wtWho').value, d = document.getElementById('wtDate').value, v = parseFloat(document.getElementById('wtVal').value);
+    if (!d || !(v >= 20 && v <= 300)) { document.getElementById('wtSum').textContent = 'Enter a date and a weight between 20 and 300 kg.'; return; }
+    v = r1(v);
+    var ex = wt.filter(function (x) { return x.p === who && x.d === d; })[0];
+    if (ex) ex.w = v; else wt.push({ id: Date.now() + '_' + wt.length, p: who, d: d, w: v });
+    save(LS_WT, wt); wsel = who; document.getElementById('wtVal').value = ''; renderWeight();
+  });
+
   function todayKey() { var n = now(); return n.y + '-' + n.m + '-' + n.d; }
   function resetDaily() {
     var ch = false;
-    tasks.forEach(function (t) { if (t.daily && t.done && t.doneDay !== todayKey()) { t.done = false; ch = true; } });
+    tasks.forEach(function (t) {
+      if (!t.done || t.doneDay === todayKey()) return;
+      if (t.daily) { t.done = false; ch = true; }
+      else if (t.rep === 'w' || t.rep === 'm') { t.done = false; t.due = nextOcc(t, todayISO(), true); ch = true; }
+    });
     if (ch) { save(LS_TASKS, tasks); renderTasks(); }
   }
 

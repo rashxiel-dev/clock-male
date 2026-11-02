@@ -332,8 +332,22 @@ jobs:
                   val bt = ArrayList<String>()
                   val re = Regex("""^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\|\s*([^|]+?)\s*(?:\|\s*(.*))?$""")
                   val sched = root.optJSONObject("sched")?.optString("v") ?: ""
+                  val notes = ArrayList<String>()
+                  var grp: List<String>? = null
+                  val dayKey = listOf("sun", "mon", "tue", "wed", "thu", "fri", "sat")[cal.get(Calendar.DAY_OF_WEEK) - 1]
                   for (line in sched.split("\n")) {
-                      val m = re.find(line.trim()) ?: continue
+                      val ln = line.trim()
+                      if (ln.startsWith("[") && ln.endsWith("]")) {
+                          grp = ln.substring(1, ln.length - 1).lowercase().split(Regex("[\\s,]+")).filter { it.isNotEmpty() }.map { it.take(3) }
+                          continue
+                      }
+                      val g = grp
+                      if (g != null && !g.contains("all") && !g.contains(dayKey)) continue
+                      val m = re.find(ln)
+                      if (m == null) {
+                          if (ln.isNotEmpty()) notes.add(ln)
+                          continue
+                      }
                       val s = m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
                       val e = m.groupValues[3].toInt() * 60 + m.groupValues[4].toInt()
                       bs.add(intArrayOf(s, e))
@@ -360,6 +374,11 @@ jobs:
                       range = hm(bs[pick][0]) + " - " + hm(bs[pick][1])
                       leftMs = (if (nowIdx >= 0) bs[pick][1] else bs[pick][0]) * 60000L - curMs
                       leftLabel = if (nowIdx >= 0) "LEFT" else "TO GO"
+                  }
+
+                  if (bs.isEmpty() && notes.isNotEmpty()) {
+                      label = "TODAY"
+                      title = notes[0]
                   }
 
                   // moments when the widget should refresh itself
@@ -408,7 +427,7 @@ jobs:
                       }
                   }
                   if (first < 0) {
-                      addLine(sb, "All done for today", DIM, false, false)
+                      addLine(sb, if (bs.isEmpty()) "Nothing scheduled today" else "All done for today", DIM, false, false)
                   } else {
                       var shownN = 0
                       for (i in first until bs.size) {

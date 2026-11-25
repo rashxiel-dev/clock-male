@@ -1,0 +1,654 @@
+name: Build Android widget
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/android.yml'
+      - 'index.html'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Create project files
+        run: |
+          mkdir -p androidapp/.
+          cat > androidapp/settings.gradle <<'EOF_FILE'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+          rootProject.name = "MaleClockWidget"
+          include ':app'
+          EOF_FILE
+          mkdir -p androidapp/.
+          cat > androidapp/build.gradle <<'EOF_FILE'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+              id 'org.jetbrains.kotlin.android' version '1.9.24' apply false
+          }
+          EOF_FILE
+          mkdir -p androidapp/.
+          cat > androidapp/gradle.properties <<'EOF_FILE'
+          org.gradle.jvmargs=-Xmx2g
+          EOF_FILE
+          mkdir -p androidapp/app
+          cat > androidapp/app/build.gradle <<'EOF_FILE'
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
+          android {
+              namespace 'com.local.maleclock'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.local.maleclock'
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = '17' }
+          }
+          EOF_FILE
+          mkdir -p androidapp/app/src/main
+          cat > androidapp/app/src/main/AndroidManifest.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:label="Male Clock">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+                      android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <receiver android:name=".ClockWidget" android:exported="false">
+                      <intent-filter>
+                          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                      </intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info" />
+                  </receiver>
+              </application>
+          </manifest>
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/res/xml
+          cat > androidapp/app/src/main/res/xml/widget_info.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="250dp"
+              android:minHeight="250dp"
+              android:minResizeWidth="180dp"
+              android:minResizeHeight="120dp"
+              android:targetCellWidth="4"
+              android:targetCellHeight="4"
+              android:updatePeriodMillis="1800000"
+              android:initialLayout="@layout/widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen" />
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/res/drawable
+          cat > androidapp/app/src/main/res/drawable/bg.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#F2141635" />
+              <corners android:radius="18dp" />
+          </shape>
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/res/drawable
+          cat > androidapp/app/src/main/res/drawable/bg_card.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#FFB9B2FF" />
+              <corners android:radius="14dp" />
+          </shape>
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/res/layout
+          cat > androidapp/app/src/main/res/layout/widget.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="12dp"
+              android:background="@drawable/bg">
+              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:orientation="horizontal" android:gravity="center_vertical"
+                  android:padding="10dp" android:background="@drawable/bg_card">
+                  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                      android:layout_weight="1" android:orientation="vertical">
+                      <TextView android:id="@+id/w_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="10sp" />
+                      <TextView android:id="@+id/w_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:textColor="#14153A" android:textSize="18sp" android:textStyle="bold" android:maxLines="2" />
+                      <TextView android:id="@+id/w_range" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="12sp" />
+                  </LinearLayout>
+                  <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:orientation="vertical" android:gravity="end">
+                      <Chronometer android:id="@+id/w_cd" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#14153A" android:textSize="24sp" android:textStyle="bold" />
+                      <TextView android:id="@+id/w_cdl" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:textColor="#3A3570" android:textSize="10sp" />
+                  </LinearLayout>
+              </LinearLayout>
+              <TextView android:id="@+id/w_pray" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#C9C5FF" android:textSize="13sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_th" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#9A97C9" android:textSize="10sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_tasks" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#FFFFFF" android:textSize="13sp" />
+              <TextView android:id="@+id/w_sh" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:textColor="#9A97C9" android:textSize="10sp" android:layout_marginTop="8dp" />
+              <TextView android:id="@+id/w_sched" android:layout_width="match_parent" android:layout_height="0dp"
+                  android:layout_weight="1" android:textColor="#FFFFFF" android:textSize="12sp" />
+              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                  <TextView android:id="@+id/w_upd" android:layout_width="0dp" android:layout_height="wrap_content"
+                      android:layout_weight="1" android:textColor="#9A97C9" android:textSize="11sp" />
+                  <TextView android:id="@+id/w_ref" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:text="Refresh" android:textColor="#C9C5FF" android:textSize="12sp" android:padding="4dp" />
+              </LinearLayout>
+          </LinearLayout>
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/java/com/local/maleclock
+          cat > androidapp/app/src/main/java/com/local/maleclock/MainActivity.kt <<'EOF_FILE'
+          package com.local.maleclock
+
+          import android.app.Activity
+          import android.appwidget.AppWidgetManager
+          import android.content.BroadcastReceiver
+          import android.content.ComponentName
+          import android.content.Context
+          import android.content.Intent
+          import android.content.IntentFilter
+          import android.net.Uri
+          import android.os.BatteryManager
+          import android.os.Bundle
+          import android.os.Handler
+          import android.os.Looper
+          import android.view.View
+          import android.view.WindowManager
+          import android.webkit.JavascriptInterface
+          import android.webkit.ValueCallback
+          import android.webkit.WebChromeClient
+          import android.webkit.WebView
+          import android.webkit.WebViewClient
+          import org.json.JSONObject
+          import java.net.HttpURLConnection
+          import java.net.URL
+          import java.util.Calendar
+
+          class MainActivity : Activity() {
+              private lateinit var web: WebView
+              private val handler = Handler(Looper.getMainLooper())
+              private var level = -1
+              private var charging = 0
+              private var pending: ValueCallback<Array<Uri>>? = null
+
+              private val battery = object : BroadcastReceiver() {
+                  override fun onReceive(c: Context, i: Intent) {
+                      val l = i.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                      val sc = i.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
+                      val st = i.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                      level = if (l >= 0 && sc > 0) l * 100 / sc else -1
+                      charging = if (st == BatteryManager.BATTERY_STATUS_CHARGING || st == BatteryManager.BATTERY_STATUS_FULL) 1 else 0
+                      sendBattery()
+                  }
+              }
+
+              // keeps the screen on between 06:00 and 22:00 (phone time), lets it sleep otherwise
+              private val awakeTick = object : Runnable {
+                  override fun run() {
+                      val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                      if (h >= 6 && h < 22) {
+                          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                      } else {
+                          window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                      }
+                      handler.postDelayed(this, 300000)
+                  }
+              }
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  web = WebView(this)
+                  web.settings.javaScriptEnabled = true
+                  web.settings.domStorageEnabled = true
+                  web.setBackgroundColor(0xFF0E0F22.toInt())
+                  web.addJavascriptInterface(Bridge(), "Android")
+                  web.webViewClient = object : WebViewClient() {
+                      override fun onPageFinished(view: WebView?, url: String?) {
+                          sendBattery()
+                      }
+                  }
+                  web.webChromeClient = object : WebChromeClient() {
+                      override fun onShowFileChooser(w: WebView?, cb: ValueCallback<Array<Uri>>?, p: FileChooserParams?): Boolean {
+                          pending?.onReceiveValue(null)
+                          pending = cb
+                          val i = Intent(Intent.ACTION_GET_CONTENT)
+                          i.addCategory(Intent.CATEGORY_OPENABLE)
+                          i.type = "image/*"
+                          i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                          startActivityForResult(Intent.createChooser(i, "Choose photos"), 7)
+                          return true
+                      }
+                  }
+                  setContentView(web)
+                  web.loadUrl("file:///android_asset/index.html")
+                  registerReceiver(battery, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                  awakeTick.run()
+              }
+
+              override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                  if (requestCode == 7) {
+                      var out: Array<Uri>? = null
+                      if (resultCode == RESULT_OK && data != null) {
+                          val clip = data.clipData
+                          val one = data.data
+                          if (clip != null) {
+                              out = Array(clip.itemCount) { clip.getItemAt(it).uri }
+                          } else if (one != null) {
+                              out = arrayOf(one)
+                          }
+                      }
+                      pending?.onReceiveValue(out)
+                      pending = null
+                  } else {
+                      super.onActivityResult(requestCode, resultCode, data)
+                  }
+              }
+
+              override fun onWindowFocusChanged(hasFocus: Boolean) {
+                  super.onWindowFocusChanged(hasFocus)
+                  if (hasFocus) {
+                      window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                          or View.SYSTEM_UI_FLAG_FULLSCREEN
+                          or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                          or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                          or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                          or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+                  }
+              }
+
+              override fun onDestroy() {
+                  handler.removeCallbacks(awakeTick)
+                  unregisterReceiver(battery)
+                  web.destroy()
+                  super.onDestroy()
+              }
+
+              private fun sendBattery() {
+                  web.evaluateJavascript("window.onBat && window.onBat(" + level + ", " + charging + ")", null)
+              }
+
+              inner class Bridge {
+                  // the page asks to dim the screen when idle and restore it on touch
+                  @JavascriptInterface
+                  fun power(m: String) {
+                      runOnUiThread {
+                          val lp = window.attributes
+                          lp.screenBrightness = if (m == "dim") 0.1f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                          window.attributes = lp
+                      }
+                  }
+
+                  // downloads the Google Calendar secret iCal link for the page (read-only)
+                  @JavascriptInterface
+                  fun ical(u: String) {
+                      if (!u.startsWith("https://")) return
+                      Thread {
+                          var text = ""
+                          try {
+                              val c = URL(u).openConnection() as HttpURLConnection
+                              c.connectTimeout = 15000
+                              c.readTimeout = 15000
+                              c.setRequestProperty("User-Agent", "MaleClock/1.0 (Android)")
+                              text = c.inputStream.bufferedReader().use { it.readText() }
+                          } catch (e: Exception) {
+                              text = ""
+                          }
+                          runOnUiThread { web.evaluateJavascript("window.onIcs(" + JSONObject.quote(text) + ", " + JSONObject.quote(u) + ")", null) }
+                      }.start()
+                  }
+
+                  // shares the sync address and code with the home-screen widget
+                  @JavascriptInterface
+                  fun config(fb: String, code: String) {
+                      val p = getSharedPreferences("cfg", Context.MODE_PRIVATE)
+                      if (p.getString("fb", "") == fb && p.getString("code", "") == code) return
+                      p.edit().putString("fb", fb).putString("code", code).apply()
+                      val ids = AppWidgetManager.getInstance(this@MainActivity).getAppWidgetIds(ComponentName(this@MainActivity, ClockWidget::class.java))
+                      if (ids.isNotEmpty()) {
+                          val i = Intent(this@MainActivity, ClockWidget::class.java)
+                          i.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                          i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                          sendBroadcast(i)
+                      }
+                  }
+              }
+          }
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/java/com/local/maleclock
+          cat > androidapp/app/src/main/java/com/local/maleclock/ClockWidget.kt <<'EOF_FILE'
+          package com.local.maleclock
+
+          import android.app.AlarmManager
+          import android.app.PendingIntent
+          import android.appwidget.AppWidgetManager
+          import android.appwidget.AppWidgetProvider
+          import android.content.Context
+          import android.content.Intent
+          import android.graphics.Color
+          import android.graphics.Typeface
+          import android.net.Uri
+          import android.os.SystemClock
+          import android.text.SpannableStringBuilder
+          import android.text.Spanned
+          import android.text.style.ForegroundColorSpan
+          import android.text.style.StrikethroughSpan
+          import android.text.style.StyleSpan
+          import android.view.View
+          import android.widget.RemoteViews
+          import org.json.JSONArray
+          import org.json.JSONObject
+          import java.net.HttpURLConnection
+          import java.net.URL
+          import java.util.Calendar
+          import java.util.Locale
+          import java.util.TimeZone
+
+          class W(
+              val label: String, val title: String, val range: String,
+              val leftMs: Long, val leftLabel: String, val prayer: String,
+              val tasksHead: String, val tasks: CharSequence,
+              val schedHead: String, val sched: CharSequence,
+              val updated: String, val changeInMs: Long
+          )
+
+          class ClockWidget : AppWidgetProvider() {
+
+              private val DIM = Color.parseColor("#7C78B8")
+              private val LIGHT = Color.parseColor("#E9E7FF")
+
+              override fun onUpdate(context: Context, mgr: AppWidgetManager, ids: IntArray) {
+                  val pending = goAsync()
+                  Thread {
+                      val w = try {
+                          build(context)
+                      } catch (e: Exception) {
+                          W("", "Could not load", e.message ?: "Check the address and code", -1L, "", "", "", "", "", "", "", -1L)
+                      }
+                      for (id in ids) mgr.updateAppWidget(id, makeViews(context, w, ids))
+                      if (w.changeInMs > 0) {
+                          val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                          am.set(AlarmManager.RTC, System.currentTimeMillis() + w.changeInMs, refreshIntent(context, ids))
+                      }
+                      pending.finish()
+                  }.start()
+              }
+
+              private fun refreshIntent(ctx: Context, ids: IntArray): PendingIntent {
+                  val r = Intent(ctx, ClockWidget::class.java)
+                  r.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                  r.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                  return PendingIntent.getBroadcast(ctx, 1, r, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+              }
+
+              private fun makeViews(ctx: Context, w: W, ids: IntArray): RemoteViews {
+                  val v = RemoteViews(ctx.packageName, R.layout.widget)
+                  v.setTextViewText(R.id.w_label, w.label)
+                  v.setTextViewText(R.id.w_title, w.title)
+                  v.setTextViewText(R.id.w_range, w.range)
+                  v.setTextViewText(R.id.w_pray, w.prayer)
+                  v.setTextViewText(R.id.w_th, w.tasksHead)
+                  v.setTextViewText(R.id.w_tasks, w.tasks)
+                  v.setTextViewText(R.id.w_sh, w.schedHead)
+                  v.setTextViewText(R.id.w_sched, w.sched)
+                  v.setTextViewText(R.id.w_upd, w.updated)
+                  v.setTextViewText(R.id.w_cdl, w.leftLabel)
+                  if (w.leftMs >= 0) {
+                      v.setViewVisibility(R.id.w_cd, View.VISIBLE)
+                      v.setChronometerCountDown(R.id.w_cd, true)
+                      v.setChronometer(R.id.w_cd, SystemClock.elapsedRealtime() + w.leftMs, null, true)
+                  } else {
+                      v.setViewVisibility(R.id.w_cd, View.GONE)
+                  }
+                  val open = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+                  v.setOnClickPendingIntent(R.id.root, open)
+                  v.setOnClickPendingIntent(R.id.w_ref, refreshIntent(ctx, ids))
+                  return v
+              }
+
+              private fun build(ctx: Context): W {
+                  val p = ctx.getSharedPreferences("cfg", Context.MODE_PRIVATE)
+                  val fb = p.getString("fb", "") ?: ""
+                  val code = p.getString("code", "") ?: ""
+                  if (fb.isEmpty() || code.isEmpty()) {
+                      return W("", "Open the Male Clock app", "and set the Sync database URL in Settings.", -1L, "", "", "", "", "", "", "", -1L)
+                  }
+                  val c = URL("$fb/rooms/$code.json").openConnection() as HttpURLConnection
+                  c.connectTimeout = 10000
+                  c.readTimeout = 10000
+                  val text = c.inputStream.bufferedReader().use { it.readText() }
+                  if (text.trim() == "null") return W("", "No data yet", "Sync the clock app first.", -1L, "", "", "", "", "", "", "", -1L)
+                  val root = JSONObject(text)
+
+                  val cal = Calendar.getInstance(TimeZone.getTimeZone("Indian/Maldives"))
+                  val cur = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+                  val curMs = (cur * 60 + cal.get(Calendar.SECOND)) * 1000L
+                  val today = String.format(Locale.US, "%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+
+                  // schedule blocks
+                  val bs = ArrayList<IntArray>()
+                  val bt = ArrayList<String>()
+                  val re = Regex("""^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\|\s*([^|]+?)\s*(?:\|\s*(.*))?$""")
+                  val sched = root.optJSONObject("sched")?.optString("v") ?: ""
+                  val notes = ArrayList<String>()
+                  var grp: List<String>? = null
+                  val dayKey = listOf("sun", "mon", "tue", "wed", "thu", "fri", "sat")[cal.get(Calendar.DAY_OF_WEEK) - 1]
+                  for (line in sched.split("\n")) {
+                      val ln = line.trim()
+                      if (ln.startsWith("[") && ln.endsWith("]")) {
+                          grp = ln.substring(1, ln.length - 1).lowercase().split(Regex("[\\s,]+")).filter { it.isNotEmpty() }.map { it.take(3) }
+                          continue
+                      }
+                      val g = grp
+                      if (g != null && !g.contains("all") && !g.contains(dayKey)) continue
+                      val m = re.find(ln)
+                      if (m == null) {
+                          if (ln.isNotEmpty()) notes.add(ln)
+                          continue
+                      }
+                      val s = m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
+                      val e = m.groupValues[3].toInt() * 60 + m.groupValues[4].toInt()
+                      bs.add(intArrayOf(s, e))
+                      bt.add(m.groupValues[5])
+                  }
+                  var nowIdx = -1
+                  var nextIdx = -1
+                  for (i in bs.indices) {
+                      if (cur >= bs[i][0] && cur < bs[i][1]) {
+                          nowIdx = i
+                      } else if (bs[i][0] > cur && (nextIdx == -1 || bs[i][0] < bs[nextIdx][0])) {
+                          nextIdx = i
+                      }
+                  }
+                  val pick = if (nowIdx >= 0) nowIdx else nextIdx
+                  var label = ""
+                  var title = "Nothing more scheduled today"
+                  var range = ""
+                  var leftMs = -1L
+                  var leftLabel = ""
+                  if (pick >= 0) {
+                      label = if (nowIdx >= 0) "NOW" else "NEXT UP"
+                      title = bt[pick]
+                      range = hm(bs[pick][0]) + " - " + hm(bs[pick][1])
+                      leftMs = (if (nowIdx >= 0) bs[pick][1] else bs[pick][0]) * 60000L - curMs
+                      leftLabel = if (nowIdx >= 0) "LEFT" else "TO GO"
+                  }
+
+                  if (bs.isEmpty() && notes.isNotEmpty()) {
+                      label = "TODAY"
+                      title = notes[0]
+                  }
+
+                  // moments when the widget should refresh itself
+                  val marks = ArrayList<Int>()
+                  for (b in bs) {
+                      marks.add(b[0])
+                      marks.add(b[1])
+                  }
+
+                  // prayer
+                  var pray = "Prayer times: open the clock app to refresh"
+                  val pr = root.optJSONObject("pr")
+                  if (pr != null && pr.optString("d") == today) {
+                      pray = "All prayers done for today"
+                      val arr = pr.optJSONArray("t")
+                      if (arr != null) {
+                          var found = false
+                          for (i in 0 until arr.length()) {
+                              val pair = arr.getJSONArray(i)
+                              val tm = pair.getString(1)
+                              val mm = tm.substring(0, 2).toInt() * 60 + tm.substring(3, 5).toInt()
+                              marks.add(mm)
+                              if (!found && mm > cur) {
+                                  pray = "Next: " + pair.getString(0) + " " + tm
+                                  found = true
+                              }
+                          }
+                      }
+                  }
+                  var change = -1L
+                  for (mk in marks) {
+                      if (mk > cur) {
+                          val d = mk * 60000L - curMs + 3000L
+                          if (change < 0 || d < change) change = d
+                      }
+                  }
+
+                  // schedule list
+                  val past = bs.count { it[1] <= cur }
+                  val sb = SpannableStringBuilder()
+                  var first = -1
+                  for (i in bs.indices) {
+                      if (bs[i][1] > cur) {
+                          first = i
+                          break
+                      }
+                  }
+                  if (first < 0) {
+                      addLine(sb, if (bs.isEmpty()) "Nothing scheduled today" else "All done for today", DIM, false, false)
+                  } else {
+                      var shownN = 0
+                      for (i in first until bs.size) {
+                          if (shownN == 7) {
+                              addLine(sb, "+" + (bs.size - i) + " more", DIM, false, false)
+                              break
+                          }
+                          val isNow = i == nowIdx
+                          addLine(sb, hm(bs[i][0]) + "  " + bt[i], if (isNow) Color.WHITE else LIGHT, isNow, false)
+                          shownN++
+                      }
+                  }
+                  trim(sb)
+
+                  // tasks
+                  val shown = ArrayList<JSONObject>()
+                  for (o in items(root.opt("tasks"))) {
+                      val due = o.optString("due")
+                      if (o.optBoolean("daily") || o.optBoolean("star") || due.isEmpty() || due <= today) shown.add(o)
+                  }
+                  shown.sortWith(compareBy<JSONObject>({ it.optBoolean("done") }, { !it.optBoolean("star") }))
+                  val doneN = shown.count { it.optBoolean("done") }
+                  val tsb = SpannableStringBuilder()
+                  if (shown.isEmpty()) addLine(tsb, "No tasks today", DIM, false, false)
+                  var n = 0
+                  for (o in shown) {
+                      if (n == 6) {
+                          addLine(tsb, "+" + (shown.size - 6) + " more", DIM, false, false)
+                          break
+                      }
+                      val d = o.optBoolean("done")
+                      val mark = if (d) "\u2713 " else if (o.optBoolean("star")) "\u2605 " else "\u2022 "
+                      addLine(tsb, mark + o.optString("text"), if (d) DIM else Color.WHITE, false, d)
+                      n++
+                  }
+                  val shopN = items(root.opt("shop")).count { !it.optBoolean("done") }
+                  if (shopN > 0) addLine(tsb, "Shopping: " + shopN + " to get", LIGHT, false, false)
+                  trim(tsb)
+
+                  return W(
+                      label, title, range, leftMs, leftLabel, pray,
+                      "TASKS TODAY  " + doneN + "/" + shown.size, tsb,
+                      "THITHY DAILY TASK  " + past + "/" + bs.size, sb,
+                      "Updated " + hm(cur), change
+                  )
+              }
+
+              private fun addLine(sb: SpannableStringBuilder, text: String, color: Int, bold: Boolean, strike: Boolean) {
+                  val st = sb.length
+                  sb.append(text)
+                  val en = sb.length
+                  sb.setSpan(ForegroundColorSpan(color), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  if (bold) sb.setSpan(StyleSpan(Typeface.BOLD), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  if (strike) sb.setSpan(StrikethroughSpan(), st, en, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                  sb.append("\n")
+              }
+
+              private fun trim(sb: SpannableStringBuilder) {
+                  if (sb.length > 0) sb.delete(sb.length - 1, sb.length)
+              }
+
+              private fun items(x: Any?): List<JSONObject> {
+                  val out = ArrayList<JSONObject>()
+                  if (x is JSONArray) {
+                      for (i in 0 until x.length()) {
+                          val o = x.optJSONObject(i)
+                          if (o != null) out.add(o)
+                      }
+                  } else if (x is JSONObject) {
+                      for (k in x.keys()) {
+                          val o = x.optJSONObject(k)
+                          if (o != null) out.add(o)
+                      }
+                  }
+                  return out
+              }
+
+              private fun hm(m: Int): String = String.format(Locale.US, "%02d:%02d", m / 60, m % 60)
+          }
+          EOF_FILE
+          mkdir -p androidapp/app/src/main/assets
+          cp index.html androidapp/app/src/main/assets/index.html
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: male-clock-signing-key-v1
+      - name: Keep the same signing key between builds
+        run: |
+          if [ ! -f ~/.android/debug.keystore ]; then
+            mkdir -p ~/.android
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+      - name: Build APK
+        working-directory: androidapp
+        run: gradle assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaleClockWidget-apk
+          path: androidapp/app/build/outputs/apk/debug/app-debug.apk

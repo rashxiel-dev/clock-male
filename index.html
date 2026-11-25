@@ -231,6 +231,17 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
 .pick{display:flex;gap:6px;flex-wrap:wrap}.pick button{padding:4px 14px;font-size:.85em}.pick button.on{background:var(--accent);color:var(--on-accent)}
 .task-form input[type=number]{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:9em}
 #wtChart svg{max-height:270px}.wleg{font-size:.85em;font-weight:600;display:flex;gap:14px}
+.aleg{display:flex;flex-wrap:wrap;gap:6px;font-size:.72em}.ac{padding:2px 9px;border-radius:10px}
+.ac-t,.mgrid button.ac-t{background:#a9dcf7;color:#12324a}
+.ac-x,.mgrid button.ac-x{background:#e9b6ef;color:#3a1747}
+.ac-r,.mgrid button.ac-r{background:#8f7ae6;color:#fff}
+.ac-p,.mgrid button.ac-p{background:#f6c490;color:#4a2d08}
+.ac-n,.mgrid button.ac-n{background:#d3d3d3;color:#333}
+.ac-h,.mgrid button.ac-h{background:#46e6b9;color:#063d2d}
+.ac-red,.mgrid button.ac-red{background:#e53935;color:#fff;font-weight:700}
+.ac-w,.mgrid button.ac-w{background:#6a6a6a;color:#fff}
+.ac-b,.mgrid button.ac-b{background:#1e88e5;color:#fff;font-weight:700}
+.mgrid button.sel{box-shadow:inset 0 0 0 3px var(--fg)}
 </style>
 
 <div id="bg"></div>
@@ -287,14 +298,16 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     <select id="pRep" aria-label="Repeat"><option value="">No repeat</option><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option></select>
     <button type="submit">Add</button>
   </form>
-  <div class="flt"><button class="ghost" data-f="open">Open</button><button class="ghost" data-f="all">All</button><button class="ghost" data-f="done">Done</button></div>
+  <div class="flt"><button class="ghost" data-f="open">Open</button><button class="ghost" data-f="all">All</button><button class="ghost" data-f="done">Done</button><button class="ghost" data-f="monthly">Monthly</button></div>
   <ul class="list" id="pList"></ul>
-  <p class="hint">Tasks with a future date appear on the dashboard on their day. Starred and daily tasks always show there. Weekly repeats on the weekday of the date you pick, monthly on the same day of each month.</p>
+  <p class="hint">Tasks with a future date appear on the dashboard on their day. Starred and daily tasks always show there. Weekly repeats on the weekday of the date you pick, monthly on the same day of each month. Monthly tasks are listed only under Monthly (and All) on this page.</p>
 </section>
 <section class="page" id="pg-cal" hidden>
   <div class="cal-head"><button class="ghost" id="mPrev" type="button">&lsaquo;</button><h2 id="mTitle"></h2><button class="ghost" id="mNext" type="button">&rsaquo;</button></div>
   <div class="mgrid" id="mGrid"></div>
   <label class="rep"><input type="checkbox" id="acadOn" checked> Show school calendar 2027 (Ministry of Education)</label>
+  <div id="acadLeg"><div class="aleg"><span class="ac ac-t">Teaching day</span><span class="ac ac-x">School exam</span><span class="ac ac-r">Report preparation</span><span class="ac ac-p">Teacher PD</span><span class="ac ac-n">Non-teaching</span><span class="ac ac-h">School holiday</span><span class="ac ac-red">Public holiday</span><span class="ac ac-w">Weekend</span><span class="ac ac-b">Start of academic year</span></div>
+  <p class="hint">Term 1 (17 Jan - 15 Jul): 114 school days. Term 2 (1 Aug - 9 Dec): 87. Total 201: teaching 163, exams 16, report preparation 10, teacher PD 7, non-teaching 5. 10 May and 5 Oct count as half teaching days.</p></div>
   <h2 id="dTitle"></h2>
   <ul class="list" id="dList"></ul>
   <form class="cal-form" id="eForm"><input type="text" id="eText" placeholder="New event" aria-label="Event title" autocomplete="off"><input type="time" id="eTime" aria-label="Time"><button type="submit">Add</button></form>
@@ -319,7 +332,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   <form class="task-form" id="wtForm">
     <select id="wtWho" aria-label="Who"><option value="thithy">Thithy</option><option value="rash">Rash</option><option value="himmi">Himmi</option></select>
     <input type="date" id="wtDate" aria-label="Check date">
-    <input type="number" id="wtVal" step="0.1" min="20" max="300" inputmode="decimal" placeholder="Weight (kg)" aria-label="Weight in kg">
+    <input type="number" id="wtVal" step="0.1" min="1" max="300" inputmode="decimal" placeholder="Weight (kg)" aria-label="Weight in kg">
     <button type="submit">Add</button>
   </form>
   <div id="wtChart"></div>
@@ -342,8 +355,10 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
       <label for="o_asr">Asr adjust (min)</label><input id="o_asr" type="number" step="1">
       <label for="o_magrib">Magrib adjust (min)</label><input id="o_magrib" type="number" step="1">
       <label for="o_isha">Isha adjust (min)</label><input id="o_isha" type="number" step="1">
-      <label for="s_ical" class="set-wide">Google Calendar secret iCal link</label>
+      <label for="s_ical" class="set-wide">Calendar links (Google secret iCal link; add more links separated by spaces)</label>
       <input id="s_ical" class="set-wide" type="text" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" autocomplete="off" autocapitalize="off">
+      <label class="set-wide rep"><input type="checkbox" id="s_mv"> Add the Maldives calendar from MV+ (Hijri dates, public holidays, moon phases, events)</label>
+      <p class="hint set-wide" id="icsStatus"></p>
       <label for="s_code" class="set-wide">Phone add-task code (8+ letters or numbers, same code on your phone page)</label>
       <input id="s_code" class="set-wide" type="text" autocomplete="off" autocapitalize="off">
       <p class="hint set-wide" id="pollStatus"></p>
@@ -374,6 +389,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   var LAT = 4.1755, LNG = 73.5093, TZ = 5, ZONE = 'Indian/Maldives';
   var RAD = Math.PI / 180;
   var DEFAULTS = { h24: 24, fa: 18, ia: 18, off: { fajr: 0, sunrise: 0, zuhr: 1, asr: 0, magrib: 1, isha: 0 } };
+  if (!window.webkit && window.Android) { window.webkit = { messageHandlers: { power: { postMessage: function (m) { Android.power(m); } }, ical: { postMessage: function (u) { Android.ical(u); } } } }; }
   var LS_CFG = 'male-clock-cfg', LS_TASKS = 'male-clock-tasks';
 
   function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
@@ -531,7 +547,12 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     fill(listEl, 'd', dash);
     hintEl.textContent = dash.length ? '' : 'No tasks today. Add one above.';
     setRing('taskRing', dash.filter(function (t) { return t.done; }).length, dash.length);
-    fill(document.getElementById('pList'), 'p', sorted(tasks.filter(function (t) { return tf === 'all' || (tf === 'done' ? t.done : !t.done); })));
+    fill(document.getElementById('pList'), 'p', sorted(tasks.filter(function (t) {
+      if (tf === 'monthly') return t.rep === 'm';
+      if (tf === 'all') return true;
+      if (t.rep === 'm') return false;
+      return tf === 'done' ? t.done : !t.done;
+    })));
     Array.prototype.forEach.call(document.querySelectorAll('#pg-todo .flt button'), function (b) { b.className = 'ghost' + (b.getAttribute('data-f') === tf ? ' on' : ''); });
   }
   function addDays(iso, n) { var p = iso.split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
@@ -569,7 +590,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     document.getElementById('s_h24').value = String(c.h24);
     document.getElementById('s_fa').value = c.fa;
     document.getElementById('s_ia').value = c.ia;
-    document.getElementById('s_ical').value = cfg.ical || ''; document.getElementById('s_code').value = cfg.code || '';
+    document.getElementById('s_ical').value = cfg.ical || ''; document.getElementById('s_mv').checked = !!cfg.mv; document.getElementById('icsStatus').textContent = icsStatusText(); document.getElementById('s_code').value = cfg.code || '';
     document.getElementById('pollStatus').textContent = pollTxt || 'Not checked yet.';
     document.getElementById('s_fb').value = cfg.fb || ''; document.getElementById('syncStatus').textContent = syncTxt || '';
     ids.forEach(function (k) { document.getElementById('o_' + k).value = c.off[k]; });
@@ -583,6 +604,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     cfg.h24 = +document.getElementById('s_h24').value === 12 ? 12 : 24;
     cfg.fa = num('s_fa', 18); cfg.ia = num('s_ia', 18);
     cfg.ical = document.getElementById('s_ical').value.trim();
+    cfg.mv = document.getElementById('s_mv').checked;
     cfg.fb = document.getElementById('s_fb').value.trim().replace(/\/+$/, '');
     var nc = document.getElementById('s_code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     if (nc.length >= 8 && nc !== cfg.code) { cfg.code = nc; save(LS_SINCE, 0); save(LS_SEEN, []); }
@@ -649,6 +671,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   function iso(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
   function renderCal() {
     var n = now();
+    document.getElementById('acadLeg').hidden = !acadOn();
     if (!cm) { cm = { y: n.y, m: n.m }; sel = iso(n.y, n.m, n.d); }
     var first = new Date(Date.UTC(cm.y, cm.m - 1, 1)), dow = first.getUTCDay(), days = new Date(Date.UTC(cm.y, cm.m, 0)).getUTCDate(), td = iso(n.y, n.m, n.d);
     document.getElementById('mTitle').textContent = monthFmt.format(first) + ' ' + cm.y;
@@ -657,7 +680,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     for (var i = 0; i < dow; i++) { var pd = document.createElement('button'); pd.className = 'pad'; g.appendChild(pd); }
     for (var d = 1; d <= days; d++) (function (d) {
       var k = iso(cm.y, cm.m, d), b = document.createElement('button'); b.type = 'button'; b.textContent = d;
-      var has = events.some(function (e) { return e.date === k; }) || tasks.some(function (t) { return t.due === k; }) || !!(icsMap[k] && icsMap[k].length) || !!(acadOn() && acad[k] && acad[k].some(function (x) { return x.t === 's' || x.t === 'e'; }));
+      var has = events.some(function (e) { return e.date === k; }) || tasks.some(function (t) { return t.due === k; }) || !!(icsMap[k] && icsMap[k].some(function (x) { return x.src !== 'mv'; }));
       b.className = (k === sel ? 'sel ' : '') + (k === td ? 'today ' : '') + (has ? 'dot ' : '') + acadCls(k);
       b.addEventListener('click', function () { sel = k; renderCal(); });
       g.appendChild(b);
@@ -674,7 +697,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
       .forEach(function (e) { row(e.time || 'All day', e.text, function () { events = events.filter(function (x) { return x !== e; }); save(LS_EV, events); renderCal(); }); });
     tasks.filter(function (t) { return t.due === sel; }).forEach(function (t) { row('Task', t.text + (t.done ? ' \u2713' : '')); });
     if (acadOn()) (acad[sel] || []).forEach(function (x) { row(ACL[x.t], x.text); });
-    (icsMap[sel] || []).forEach(function (x) { row(x.min < 0 ? 'All day' : clockStr(x.min / 60), x.text); });
+    (icsMap[sel] || []).forEach(function (x) { row(x.min < 0 ? (x.src === 'mv' ? 'MV+' : 'All day') : clockStr(x.min / 60), x.text); });
     if (!ul.children.length) { var h = document.createElement('li'); h.className = 'hint'; h.textContent = 'Nothing on this day.'; ul.appendChild(h); }
   }
   document.getElementById('mPrev').addEventListener('click', function () { cm.m--; if (cm.m < 1) { cm.m = 12; cm.y--; } renderCal(); });
@@ -731,18 +754,19 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
       else if (name === 'RECURRENCE-ID') { var q = pdt(val, par); if (q) cur.rid = q.key; }
       else if (name === 'UID') cur.uid = val;
       else if (name === 'STATUS') cur.status = val;
+      else if (name === 'CATEGORIES') cur.cat = val;
     });
     return evs;
   }
   var DN = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-  function buildIcs(txt) {
+  function buildIcs(txt, src) {
     var evs = parseIcs(txt), map = {}, ov = {}, n = now(), t0 = Date.UTC(n.y, n.m - 1, n.d) / 864e5, w0 = t0 - 62, w1 = t0 + 400;
     evs.forEach(function (e) { if (e.rid) ov[e.uid + '|' + e.rid] = 1; });
     function add(day, e, p, days) {
       var dt = new Date(day * 864e5), y = dt.getUTCFullYear(), m = dt.getUTCMonth() + 1, d = dt.getUTCDate(), i;
-      if (p.all) { for (i = 0; i < days; i++) { var k = new Date((day + i) * 864e5).toISOString().slice(0, 10); (map[k] = map[k] || []).push({ min: -1, text: e.text || '(no title)' }); } return; }
+      if (p.all) { for (i = 0; i < days; i++) { var k = new Date((day + i) * 864e5).toISOString().slice(0, 10); (map[k] = map[k] || []).push({ min: -1, text: e.text || '(no title)', src: src || '', cat: e.cat || '' }); } return; }
       var q = parts(p.utc ? Date.UTC(y, m - 1, d, p.h, p.mi) : zoned(y, m, d, p.h, p.mi, p.tz || ZONE)), k2 = q.year + '-' + pad(+q.month) + '-' + pad(+q.day);
-      (map[k2] = map[k2] || []).push({ min: q.hour * 60 + +q.minute, text: e.text || '(no title)' });
+      (map[k2] = map[k2] || []).push({ min: q.hour * 60 + +q.minute, text: e.text || '(no title)', src: src || '', cat: e.cat || '' });
     }
     evs.forEach(function (e) {
       var p = e.start; if (e.status === 'CANCELLED') return;
@@ -785,18 +809,58 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     Object.keys(map).forEach(function (k) { map[k].sort(function (a, b) { return a.min - b.min; }); });
     return map;
   }
-  window.onIcs = function (t) {
+  var MVURL = 'https://www.plus.mv/calendar/calendar.ics', LS_ICS2 = 'male-clock-ics2', icsTexts = {};
+  function icalUrls() {
+    var a = (cfg.ical || '').split(/[\s,]+/).filter(Boolean);
+    if (cfg.mv) a.push(MVURL);
+    return a.map(function (u) { return u.replace(/^webcal:/, 'https:'); });
+  }
+  function rebuildIcs() {
+    var m = {};
+    Object.keys(icsTexts).forEach(function (u) {
+      var one = {};
+      try { one = buildIcs(icsTexts[u], /plus\.mv/.test(u) ? 'mv' : ''); } catch (e) {}
+      Object.keys(one).forEach(function (k) { m[k] = (m[k] || []).concat(one[k]); });
+    });
+    Object.keys(m).forEach(function (k) { m[k].sort(function (a, b) { return a.min - b.min; }); });
+    icsMap = m;
+  }
+  var icsErr = '';
+  function icsStatusText() {
+    var mv = 0, ot = 0;
+    Object.keys(icsMap).forEach(function (k) { icsMap[k].forEach(function (x) { if (x.src === 'mv') mv++; else ot++; }); });
+    var t = 'Calendar items loaded: Google/other ' + ot + ', MV+ ' + mv + '.';
+    if (cfg.mv && !mv) t += window.Android ? ' MV+ has not loaded. Check the internet, then tap Save again.' : ' MV+ has not loaded here. The website gets it from the Android app through sync.';
+    return t + (icsErr ? ' ' + icsErr : '');
+  }
+  function icsShow() { var e = document.getElementById('icsStatus'); if (e) e.textContent = icsStatusText(); }
+  window.onIcs = function (t, u) {
     if (t && t.indexOf('BEGIN:VCALENDAR') >= 0) {
-      try { icsMap = buildIcs(t); icsAt = Date.now(); save(LS_ICS, t); schedule(); } catch (e) {}
+      icsTexts[u || 'main'] = t; icsErr = '';
+      try { rebuildIcs(); icsAt = Date.now(); save(LS_ICS2, icsTexts); schedule(); } catch (e) {}
       if (!document.getElementById('pg-cal').hidden) renderCal();
+    } else if (u) {
+      icsErr = 'Could not download ' + (/plus\.mv/.test(u) ? 'MV+' : 'a calendar link') + '.';
     }
+    icsShow();
   };
   function loadIcal() {
-    if (!cfg.ical) return;
-    try { window.webkit.messageHandlers.ical.postMessage(cfg.ical.replace(/^webcal:/, 'https:')); } catch (e) {}
+    var urls = icalUrls(), pruned = false;
+    Object.keys(icsTexts).forEach(function (k) { if (urls.indexOf(k) < 0) { delete icsTexts[k]; pruned = true; } });
+    if (pruned) { rebuildIcs(); icsAt = Date.now(); save(LS_ICS2, icsTexts); schedule(); if (!document.getElementById('pg-cal').hidden) renderCal(); }
+    urls.forEach(function (u) {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ical) {
+        try { window.webkit.messageHandlers.ical.postMessage(u); } catch (e) {}
+      } else if (window.fetch) {
+        fetch(u).then(function (r) { if (!r.ok) throw new Error('x'); return r.text(); }).then(function (t) { window.onIcs(t, u); }).catch(function () {});
+      }
+    });
+    icsShow();
   }
-  var ic0 = load(LS_ICS, ''); if (ic0) { try { icsMap = buildIcs(ic0); } catch (e) {} }
-  loadIcal(); setInterval(loadIcal, 1800000);
+  function mvHol(k) { return (icsMap[k] || []).some(function (x) { return x.src === 'mv' && /public holiday/i.test(x.cat || ''); }); }
+  var ic0 = load(LS_ICS2, {});
+  if (ic0 && typeof ic0 === 'object') { icsTexts = ic0; try { rebuildIcs(); } catch (e) {} }
+    loadIcal(); setInterval(loadIcal, 1800000);
 
   // ---- Tasks sent from the phone/website page (via ntfy.sh, using your private code) ----
   if (!cfg.code) {
@@ -902,7 +966,10 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   function sst(x) { syncTxt = x; var e = document.getElementById('syncStatus'); if (e) e.textContent = x; }
   ['tasks', 'shop', 'events', 'weight'].forEach(takeSnap);
   syncReady = true;
+  function pushCfg() { try { if (window.Android && Android.config) Android.config(cfg.fb || '', cfg.code || ''); } catch (e) {} }
+  pushCfg();
   onSaved = function (k, v) {
+    if (k === LS_CFG) pushCfg();
     if (!syncReady) return;
     if (k === LS_SCH) { schedU = Date.now(); try { localStorage.setItem(LS_SCHU, JSON.stringify(schedU)); } catch (e) {} schedule(); return; }
     var c = k === LS_TASKS ? 'tasks' : k === LS_SHOP ? 'shop' : k === LS_EV ? 'events' : k === LS_WT ? 'weight' : '';
@@ -1004,7 +1071,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
     ["2027-02-26", "2027-03-07", "Last 10 days of Ramadan", "h"],
     ["2027-03-09", "", "Eid-al-Fitr", "h"],
     ["2027-03-10", "2027-03-11", "On the occasion of Eid-al-Fitr", "h"],
-    ["2027-03-21", "2027-03-25", "Professional Development", "s"],
+    ["2027-02-21", "2027-02-25", "Professional Development", "s"],
     ["2027-04-01", "2027-04-15", "Gr. 11 (B-26) Mock & Gr. 12 Term Exam", "e"],
     ["2027-04-22", "", "Professional Development", "s"],
     ["2027-05-01", "", "Labour Day", "h"],
@@ -1052,15 +1119,39 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
       d = addDays(d, 1);
     }
   });
-  function acadOn() { var e = document.getElementById('acadOn'); return !e || e.checked; }
-  function acadCls(k) {
-    if (!acadOn() || !acad[k]) return '';
-    var c = ''; acad[k].forEach(function (x) { if (x.t === 'h') c += ' hol'; else if (x.t === 'b') c += ' brk'; });
-    return c;
+  var AC = {
+    mint: [['2027-01-02', '2027-01-16'], ['2027-05-16', '2027-05-22'], ['2027-07-16', '2027-07-31'], ['2027-09-19', '2027-09-25'], ['2027-12-10', '2028-01-04']],
+    non: ['2027-01-13', '2027-01-14', '2027-05-10', '2027-06-12', '2027-06-13', '2027-06-14', '2027-10-05', '2028-01-05', '2028-01-06'],
+    pd: [['2027-02-21', '2027-02-25'], ['2027-04-22', '2027-04-22'], ['2027-11-04', '2027-11-04']],
+    exam: [['2027-06-29', '2027-07-10'], ['2027-11-23', '2027-12-04']],
+    rep: [['2027-07-11', '2027-07-15'], ['2027-12-05', '2027-12-09']],
+    terms: [['2027-01-17', '2027-07-15'], ['2027-08-01', '2027-12-09'], ['2028-01-09', '2028-01-31']],
+    beg: ['2027-01-17', '2028-01-09']
+  };
+  function inR(d, rs) { return rs.some(function (r) { return d >= r[0] && d <= r[1]; }); }
+  function acClass(d) {
+    if (d < '2027-01-01' || d > '2028-01-22') return '';
+    var dw = dowOf(d), wk = dw === 5 || dw === 6;
+    var red = (acad[d] || []).some(function (x) { return x.t === 'h'; });
+    if (d === '2027-03-08') red = true;
+    if (d === '2027-03-05' || d === '2027-03-06') red = false;
+    if (red) return 'ac-red';
+    if (AC.beg.indexOf(d) >= 0) return 'ac-b';
+    if (AC.non.indexOf(d) >= 0) return 'ac-n';
+    if (inR(d, AC.mint)) return 'ac-h';
+    if (wk) return 'ac-w';
+    if (inR(d, AC.pd)) return 'ac-p';
+    if (inR(d, AC.exam)) return 'ac-x';
+    if (inR(d, AC.rep)) return 'ac-r';
+    if (inR(d, AC.terms)) return 'ac-t';
+    return '';
   }
+  function acadOn() { var e = document.getElementById('acadOn'); return !e || e.checked; }
+  function acadCls(k) { var c = acadOn() ? acClass(k) : ''; if (!c && mvHol(k)) c = 'ac-red'; return c; }
   function acadTodayLine() {
     var e = document.getElementById('acadToday'); if (!e) return;
     var a = (acad[todayISO()] || []).filter(function (x) { return x.t === 'h' || x.t === 'b'; })[0];
+    if (!a) a = (icsMap[todayISO()] || []).filter(function (x) { return x.src === 'mv' && /public holiday/i.test(x.cat || ''); })[0];
     e.textContent = a ? '\u2022 ' + a.text : '';
   }
   document.getElementById('acadOn').checked = load(LS_AC, true) !== false;
@@ -1124,7 +1215,7 @@ body.hasbg .wx{background:var(--glass2);border-radius:12px;padding:4px 10px;text
   document.getElementById('wtForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var who = document.getElementById('wtWho').value, d = document.getElementById('wtDate').value, v = parseFloat(document.getElementById('wtVal').value);
-    if (!d || !(v >= 20 && v <= 300)) { document.getElementById('wtSum').textContent = 'Enter a date and a weight between 20 and 300 kg.'; return; }
+    if (!d || !(v >= 1 && v <= 300)) { document.getElementById('wtSum').textContent = 'Enter a date and a weight between 1 and 300 kg.'; return; }
     v = r1(v);
     var ex = wt.filter(function (x) { return x.p === who && x.d === d; })[0];
     if (ex) ex.w = v; else wt.push({ id: Date.now() + '_' + wt.length, p: who, d: d, w: v });
